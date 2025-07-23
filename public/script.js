@@ -68,12 +68,92 @@ class ChandanAPI {
             body: JSON.stringify({ email, name })
         });
     }
+    
+    // Cart API
+    static async getCart(userId) {
+        return this.request(`/cart/${userId}`);
+    }
+    
+    static async addToCart(userId, productData) {
+        return this.request(`/cart/${userId}/add`, {
+            method: 'POST',
+            body: JSON.stringify(productData)
+        });
+    }
+    
+    static async updateCartItem(userId, itemId, quantity) {
+        return this.request(`/cart/${userId}/update/${itemId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ quantity })
+        });
+    }
+    
+    static async removeFromCart(userId, itemId) {
+        return this.request(`/cart/${userId}/remove/${itemId}`, {
+            method: 'DELETE'
+        });
+    }
+    
+    static async clearCart(userId) {
+        return this.request(`/cart/${userId}/clear`, {
+            method: 'DELETE'
+        });
+    }
+    
+    static async applyCoupon(userId, couponCode) {
+        return this.request(`/cart/${userId}/apply-coupon`, {
+            method: 'POST',
+            body: JSON.stringify({ couponCode })
+        });
+    }
+    
+    static async getCartCount(userId) {
+        return this.request(`/cart/count/${userId}`);
+    }
+    
+    // Orders API
+    static async createOrder(orderData) {
+        return this.request('/orders/create', {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+        });
+    }
+    
+    static async verifyPayment(paymentData) {
+        return this.request('/orders/verify-payment', {
+            method: 'POST',
+            body: JSON.stringify(paymentData)
+        });
+    }
+    
+    static async getUserOrders(userId, params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.request(`/orders/${userId}${queryString ? '?' + queryString : ''}`);
+    }
+    
+    static async getOrderDetails(orderId) {
+        return this.request(`/orders/detail/${orderId}`);
+    }
+    
+    static async cancelOrder(orderId, reason) {
+        return this.request(`/orders/${orderId}/cancel`, {
+            method: 'PUT',
+            body: JSON.stringify({ reason })
+        });
+    }
+    
+    static async trackOrder(orderNumber) {
+        return this.request(`/orders/track/${orderNumber}`);
+    }
 }
 
 // Global state
 let currentProducts = [];
 let currentCategories = [];
+let currentCart = null;
+let currentUser = { id: 'guest_' + Date.now() }; // Simple user simulation
 let isLoading = false;
+let razorpayInstance = null;
 
 // DOM Elements
 const hamburger = document.querySelector('.hamburger');
@@ -90,7 +170,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([
         loadCategories(),
         loadFeaturedProducts(),
-        loadContactInfo()
+        loadContactInfo(),
+        loadCart()
     ]);
     
     // Setup event listeners
@@ -148,6 +229,27 @@ async function loadContactInfo() {
         
     } catch (error) {
         console.error('Failed to load contact info:', error);
+    }
+}
+
+// Load Cart
+async function loadCart() {
+    try {
+        const response = await ChandanAPI.getCart(currentUser.id);
+        currentCart = response.data;
+        updateCartUI();
+        
+    } catch (error) {
+        console.error('Failed to load cart:', error);
+        // Initialize empty cart if loading fails
+        currentCart = {
+            items: [],
+            subtotal: 0,
+            tax: 0,
+            shipping: 0,
+            total: 0
+        };
+        updateCartUI();
     }
 }
 
@@ -218,9 +320,14 @@ function renderProducts(products) {
                         `<span class="colors">${product.colors.length} colors</span>` : ''
                     }
                 </div>
-                <button class="add-to-cart" data-product-id="${product.id}">
-                    ${product.inStock ? 'View Details' : 'Out of Stock'}
-                </button>
+                <div class="product-actions">
+                    <button class="view-details" data-product-id="${product.id}">
+                        View Details
+                    </button>
+                    <button class="add-to-cart" data-product-id="${product.id}" ${!product.inStock ? 'disabled' : ''}>
+                        ${product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                    </button>
+                </div>
             </div>
         </div>
     `).join('');
@@ -228,11 +335,19 @@ function renderProducts(products) {
     productGrid.innerHTML = productsHTML;
     
     // Add click event listeners to product cards
-    productGrid.querySelectorAll('.add-to-cart').forEach(button => {
+    productGrid.querySelectorAll('.view-details').forEach(button => {
         button.addEventListener('click', (e) => {
             e.stopPropagation();
             const productId = button.dataset.productId;
             viewProductDetails(productId);
+        });
+    });
+    
+    productGrid.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const productId = button.dataset.productId;
+            addToCart(productId);
         });
     });
 }
@@ -426,6 +541,352 @@ function showProductModal(product) {
         document.body.removeChild(modal);
         document.head.removeChild(styleSheet);
     });
+}
+
+// Add to Cart function
+async function addToCart(productId, quantity = 1, selectedSize = 'Free Size', selectedColor = 'Default') {
+    try {
+        const response = await ChandanAPI.addToCart(currentUser.id, {
+            productId,
+            quantity,
+            selectedSize,
+            selectedColor
+        });
+        
+        currentCart = response.data;
+        updateCartUI();
+        showNotification(response.message, 'success');
+        
+    } catch (error) {
+        console.error('Failed to add to cart:', error);
+        showNotification(error.message || 'Failed to add item to cart', 'error');
+    }
+}
+
+// Update Cart UI
+function updateCartUI() {
+    if (!currentCart) return;
+    
+    // Update cart count in header
+    const cartCount = currentCart.items.reduce((sum, item) => sum + item.quantity, 0);
+    updateCartCount(cartCount);
+    
+    // Update cart dropdown if it exists
+    updateCartDropdown();
+}
+
+// Update cart count display
+function updateCartCount(count) {
+    let cartCountElement = document.querySelector('.cart-count');
+    
+    if (!cartCountElement) {
+        // Create cart icon and count in navigation
+        const cartHTML = `
+            <div class="cart-container">
+                <button class="cart-button" onclick="toggleCartDropdown()">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">${count}</span>
+                </button>
+            </div>
+        `;
+        
+        const navMenu = document.querySelector('.nav-menu');
+        if (navMenu) {
+            navMenu.insertAdjacentHTML('afterend', cartHTML);
+            cartCountElement = document.querySelector('.cart-count');
+        }
+    }
+    
+    if (cartCountElement) {
+        cartCountElement.textContent = count;
+        cartCountElement.style.display = count > 0 ? 'block' : 'none';
+    }
+}
+
+// Toggle cart dropdown
+function toggleCartDropdown() {
+    let cartDropdown = document.querySelector('.cart-dropdown');
+    
+    if (!cartDropdown) {
+        createCartDropdown();
+        cartDropdown = document.querySelector('.cart-dropdown');
+    }
+    
+    cartDropdown.style.display = cartDropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+// Create cart dropdown
+function createCartDropdown() {
+    const cartContainer = document.querySelector('.cart-container');
+    if (!cartContainer) return;
+    
+    const cartDropdownHTML = `
+        <div class="cart-dropdown">
+            <div class="cart-header">
+                <h3>Shopping Cart</h3>
+                <button class="close-cart" onclick="toggleCartDropdown()">×</button>
+            </div>
+            <div class="cart-items"></div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <strong>Total: ₹<span class="total-amount">0</span></strong>
+                </div>
+                <div class="cart-actions">
+                    <button class="btn-secondary" onclick="viewCart()">View Cart</button>
+                    <button class="btn-primary" onclick="proceedToCheckout()">Checkout</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    cartContainer.insertAdjacentHTML('beforeend', cartDropdownHTML);
+    updateCartDropdown();
+}
+
+// Update cart dropdown content
+function updateCartDropdown() {
+    const cartItemsContainer = document.querySelector('.cart-items');
+    const totalAmountElement = document.querySelector('.total-amount');
+    
+    if (!cartItemsContainer || !currentCart) return;
+    
+    if (currentCart.items.length === 0) {
+        cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
+    } else {
+        const cartItemsHTML = currentCart.items.map(item => `
+            <div class="cart-item" data-item-id="${item.id}">
+                <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+                <div class="cart-item-details">
+                    <h4>${item.name}</h4>
+                    <p>₹${item.price.toLocaleString('en-IN')}</p>
+                    <p>Size: ${item.selectedSize}, Color: ${item.selectedColor}</p>
+                    <div class="quantity-controls">
+                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity - 1})">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                    </div>
+                </div>
+                <button class="remove-item" onclick="removeFromCart('${item.id}')">×</button>
+            </div>
+        `).join('');
+        cartItemsContainer.innerHTML = cartItemsHTML;
+    }
+    
+    if (totalAmountElement) {
+        totalAmountElement.textContent = currentCart.total.toLocaleString('en-IN');
+    }
+}
+
+// Update cart item quantity
+async function updateCartItemQuantity(itemId, newQuantity) {
+    if (newQuantity < 1) {
+        removeFromCart(itemId);
+        return;
+    }
+    
+    try {
+        const response = await ChandanAPI.updateCartItem(currentUser.id, itemId, newQuantity);
+        currentCart = response.data;
+        updateCartUI();
+        
+    } catch (error) {
+        console.error('Failed to update cart item:', error);
+        showNotification('Failed to update item quantity', 'error');
+    }
+}
+
+// Remove from cart
+async function removeFromCart(itemId) {
+    try {
+        const response = await ChandanAPI.removeFromCart(currentUser.id, itemId);
+        currentCart = response.data;
+        updateCartUI();
+        showNotification(response.message, 'success');
+        
+    } catch (error) {
+        console.error('Failed to remove from cart:', error);
+        showNotification('Failed to remove item from cart', 'error');
+    }
+}
+
+// View full cart page
+function viewCart() {
+    toggleCartDropdown();
+    showCartModal();
+}
+
+// Show cart modal
+function showCartModal() {
+    const modal = document.createElement('div');
+    modal.className = 'cart-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content cart-modal-content">
+            <div class="cart-modal-header">
+                <h2>Shopping Cart</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="cart-modal-body">
+                ${renderCartItems()}
+                ${renderCartSummary()}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add modal styles
+    addCartModalStyles();
+    
+    // Close modal events
+    modal.querySelector('.modal-close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    modal.querySelector('.modal-overlay').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+// Render cart items for modal
+function renderCartItems() {
+    if (!currentCart || currentCart.items.length === 0) {
+        return '<div class="empty-cart-message">Your cart is empty</div>';
+    }
+    
+    return `
+        <div class="cart-items-list">
+            ${currentCart.items.map(item => `
+                <div class="cart-item-full" data-item-id="${item.id}">
+                    <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+                    <div class="cart-item-details">
+                        <h3>${item.name}</h3>
+                        <p class="cart-item-price">₹${item.price.toLocaleString('en-IN')}</p>
+                        <p class="cart-item-options">Size: ${item.selectedSize} | Color: ${item.selectedColor}</p>
+                        <div class="quantity-controls">
+                            <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity - 1})">-</button>
+                            <input type="number" value="${item.quantity}" min="1" onchange="updateCartItemQuantity('${item.id}', this.value)">
+                            <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                        </div>
+                    </div>
+                    <div class="cart-item-total">
+                        <p>₹${(item.price * item.quantity).toLocaleString('en-IN')}</p>
+                        <button class="remove-item" onclick="removeFromCart('${item.id}')">Remove</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Render cart summary
+function renderCartSummary() {
+    if (!currentCart || currentCart.items.length === 0) {
+        return '';
+    }
+    
+    return `
+        <div class="cart-summary">
+            <h3>Order Summary</h3>
+            <div class="summary-line">
+                <span>Subtotal:</span>
+                <span>₹${currentCart.subtotal.toLocaleString('en-IN')}</span>
+            </div>
+            <div class="summary-line">
+                <span>Tax (18% GST):</span>
+                <span>₹${currentCart.tax.toLocaleString('en-IN')}</span>
+            </div>
+            <div class="summary-line">
+                <span>Shipping:</span>
+                <span>${currentCart.shipping === 0 ? 'FREE' : '₹' + currentCart.shipping.toLocaleString('en-IN')}</span>
+            </div>
+            ${currentCart.coupon ? `
+                <div class="summary-line discount">
+                    <span>Discount (${currentCart.coupon.code}):</span>
+                    <span>-₹${currentCart.coupon.discount.toLocaleString('en-IN')}</span>
+                </div>
+            ` : ''}
+            <div class="summary-line total">
+                <span><strong>Total:</strong></span>
+                <span><strong>₹${currentCart.total.toLocaleString('en-IN')}</strong></span>
+            </div>
+            <div class="coupon-section">
+                <input type="text" id="couponCode" placeholder="Enter coupon code">
+                <button onclick="applyCoupon()">Apply</button>
+            </div>
+            <div class="cart-actions">
+                <button class="btn-secondary" onclick="clearCart()">Clear Cart</button>
+                <button class="btn-primary" onclick="proceedToCheckout()">Proceed to Checkout</button>
+            </div>
+        </div>
+    `;
+}
+
+// Apply coupon
+async function applyCoupon() {
+    const couponInput = document.getElementById('couponCode');
+    const couponCode = couponInput.value.trim();
+    
+    if (!couponCode) {
+        showNotification('Please enter a coupon code', 'error');
+        return;
+    }
+    
+    try {
+        const response = await ChandanAPI.applyCoupon(currentUser.id, couponCode);
+        currentCart = response.data;
+        updateCartUI();
+        showNotification(response.message, 'success');
+        
+        // Refresh cart modal if open
+        const cartModal = document.querySelector('.cart-modal');
+        if (cartModal) {
+            cartModal.remove();
+            showCartModal();
+        }
+        
+    } catch (error) {
+        console.error('Failed to apply coupon:', error);
+        showNotification(error.message || 'Invalid coupon code', 'error');
+    }
+}
+
+// Clear cart
+async function clearCart() {
+    if (!confirm('Are you sure you want to clear your cart?')) return;
+    
+    try {
+        const response = await ChandanAPI.clearCart(currentUser.id);
+        currentCart = response.data;
+        updateCartUI();
+        showNotification(response.message, 'success');
+        
+        // Close cart modal if open
+        const cartModal = document.querySelector('.cart-modal');
+        if (cartModal) {
+            cartModal.remove();
+        }
+        
+    } catch (error) {
+        console.error('Failed to clear cart:', error);
+        showNotification('Failed to clear cart', 'error');
+    }
+}
+
+// Proceed to checkout
+function proceedToCheckout() {
+    if (!currentCart || currentCart.items.length === 0) {
+        showNotification('Your cart is empty', 'error');
+        return;
+    }
+    
+    // Close any open modals
+    const cartModal = document.querySelector('.cart-modal');
+    if (cartModal) {
+        cartModal.remove();
+    }
+    
+    showCheckoutModal();
 }
 
 // Update Contact Information
@@ -760,6 +1221,492 @@ function createScrollToTopButton() {
             scrollToTopButton.style.visibility = 'hidden';
         }
     });
+}
+
+// Show checkout modal
+function showCheckoutModal() {
+    const modal = document.createElement('div');
+    modal.className = 'checkout-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content checkout-modal-content">
+            <div class="checkout-header">
+                <h2>Checkout</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="checkout-body">
+                <div class="checkout-form">
+                    <div class="shipping-section">
+                        <h3>Shipping Address</h3>
+                        <form id="shippingForm">
+                            <input type="text" name="fullName" placeholder="Full Name" required>
+                            <input type="email" name="email" placeholder="Email Address" required>
+                            <input type="tel" name="phone" placeholder="Phone Number" required>
+                            <textarea name="address" placeholder="Street Address" required></textarea>
+                            <div class="address-row">
+                                <input type="text" name="city" placeholder="City" required>
+                                <input type="text" name="state" placeholder="State" required>
+                                <input type="text" name="pincode" placeholder="PIN Code" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="payment-section">
+                        <h3>Payment Method</h3>
+                        <div class="payment-options">
+                            <label>
+                                <input type="radio" name="paymentMethod" value="razorpay" checked>
+                                <span>Pay with Razorpay (Cards, UPI, Net Banking)</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="paymentMethod" value="cod">
+                                <span>Cash on Delivery</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-summary">
+                    <h3>Order Summary</h3>
+                    <div class="checkout-items">
+                        ${renderCheckoutItems()}
+                    </div>
+                    <div class="checkout-totals">
+                        ${renderCheckoutTotals()}
+                    </div>
+                    <button class="place-order-btn" onclick="placeOrder()">
+                        Place Order - ₹${currentCart.total.toLocaleString('en-IN')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    addCheckoutModalStyles();
+    
+    // Close modal events
+    modal.querySelector('.modal-close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    modal.querySelector('.modal-overlay').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+// Render checkout items
+function renderCheckoutItems() {
+    return currentCart.items.map(item => `
+        <div class="checkout-item">
+            <img src="${item.image}" alt="${item.name}">
+            <div class="item-details">
+                <h4>${item.name}</h4>
+                <p>₹${item.price.toLocaleString('en-IN')} × ${item.quantity}</p>
+                <small>Size: ${item.selectedSize} | Color: ${item.selectedColor}</small>
+            </div>
+            <div class="item-total">
+                ₹${(item.price * item.quantity).toLocaleString('en-IN')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Render checkout totals
+function renderCheckoutTotals() {
+    return `
+        <div class="total-line">
+            <span>Subtotal:</span>
+            <span>₹${currentCart.subtotal.toLocaleString('en-IN')}</span>
+        </div>
+        <div class="total-line">
+            <span>Tax (18% GST):</span>
+            <span>₹${currentCart.tax.toLocaleString('en-IN')}</span>
+        </div>
+        <div class="total-line">
+            <span>Shipping:</span>
+            <span>${currentCart.shipping === 0 ? 'FREE' : '₹' + currentCart.shipping.toLocaleString('en-IN')}</span>
+        </div>
+        ${currentCart.coupon ? `
+            <div class="total-line discount">
+                <span>Discount (${currentCart.coupon.code}):</span>
+                <span>-₹${currentCart.coupon.discount.toLocaleString('en-IN')}</span>
+            </div>
+        ` : ''}
+        <div class="total-line final-total">
+            <span><strong>Total:</strong></span>
+            <span><strong>₹${currentCart.total.toLocaleString('en-IN')}</strong></span>
+        </div>
+    `;
+}
+
+// Place order
+async function placeOrder() {
+    const form = document.getElementById('shippingForm');
+    const formData = new FormData(form);
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    
+    // Validate form
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const shippingAddress = {
+        fullName: formData.get('fullName'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        address: formData.get('address'),
+        city: formData.get('city'),
+        state: formData.get('state'),
+        pincode: formData.get('pincode')
+    };
+    
+    try {
+        // Show loading state
+        const placeOrderBtn = document.querySelector('.place-order-btn');
+        const originalText = placeOrderBtn.textContent;
+        placeOrderBtn.textContent = 'Creating Order...';
+        placeOrderBtn.disabled = true;
+        
+        // Create order
+        const orderResponse = await ChandanAPI.createOrder({
+            userId: currentUser.id,
+            cartId: currentCart.id,
+            shippingAddress,
+            billingAddress: shippingAddress,
+            paymentMethod
+        });
+        
+        const order = orderResponse.data;
+        
+        if (paymentMethod === 'razorpay') {
+            // Initialize Razorpay payment
+            initiateRazorpayPayment(order);
+        } else {
+            // Cash on Delivery
+            showOrderConfirmation(order);
+            
+            // Clear cart
+            await ChandanAPI.clearCart(currentUser.id);
+            currentCart = { items: [], subtotal: 0, tax: 0, shipping: 0, total: 0 };
+            updateCartUI();
+        }
+        
+        // Close checkout modal
+        const checkoutModal = document.querySelector('.checkout-modal');
+        if (checkoutModal) {
+            checkoutModal.remove();
+        }
+        
+    } catch (error) {
+        console.error('Failed to place order:', error);
+        showNotification(error.message || 'Failed to place order', 'error');
+        
+        // Reset button
+        const placeOrderBtn = document.querySelector('.place-order-btn');
+        if (placeOrderBtn) {
+            placeOrderBtn.textContent = originalText;
+            placeOrderBtn.disabled = false;
+        }
+    }
+}
+
+// Initiate Razorpay payment
+function initiateRazorpayPayment(order) {
+    // Load Razorpay script if not already loaded
+    if (!window.Razorpay) {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => initiateRazorpayPayment(order);
+        document.head.appendChild(script);
+        return;
+    }
+    
+    const options = {
+        key: 'rzp_test_1234567890', // Use your actual Razorpay key ID
+        amount: order.pricing.total * 100, // Amount in paise
+        currency: 'INR',
+        name: 'Chandan Sarees',
+        description: 'Purchase from Chandan Sarees',
+        order_id: order.razorpayOrderId,
+        handler: async function(response) {
+            // Payment successful
+            try {
+                const verificationResponse = await ChandanAPI.verifyPayment({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                    orderId: order.id
+                });
+                
+                showOrderConfirmation(verificationResponse.data);
+                
+                // Clear cart
+                await ChandanAPI.clearCart(currentUser.id);
+                currentCart = { items: [], subtotal: 0, tax: 0, shipping: 0, total: 0 };
+                updateCartUI();
+                
+            } catch (error) {
+                console.error('Payment verification failed:', error);
+                showNotification('Payment verification failed. Please contact support.', 'error');
+            }
+        },
+        prefill: {
+            name: order.addresses.shipping.fullName,
+            email: order.addresses.shipping.email,
+            contact: order.addresses.shipping.phone
+        },
+        theme: {
+            color: '#8B0000'
+        },
+        modal: {
+            ondismiss: function() {
+                showNotification('Payment cancelled', 'error');
+            }
+        }
+    };
+    
+    const rzp = new Razorpay(options);
+    rzp.open();
+}
+
+// Show order confirmation
+function showOrderConfirmation(order) {
+    const modal = document.createElement('div');
+    modal.className = 'order-confirmation-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content confirmation-content">
+            <div class="confirmation-header">
+                <div class="success-icon">✓</div>
+                <h2>Order Placed Successfully!</h2>
+                <p>Thank you for your purchase</p>
+            </div>
+            <div class="confirmation-body">
+                <div class="order-details">
+                    <h3>Order Details</h3>
+                    <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+                    <p><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+                    <p><strong>Total Amount:</strong> ₹${order.pricing.total.toLocaleString('en-IN')}</p>
+                    <p><strong>Payment Method:</strong> ${order.paymentMethod === 'razorpay' ? 'Online Payment' : 'Cash on Delivery'}</p>
+                    <p><strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toLocaleDateString('en-IN')}</p>
+                </div>
+                <div class="order-actions">
+                    <button class="btn-primary" onclick="trackOrder('${order.orderNumber}')">Track Order</button>
+                    <button class="btn-secondary" onclick="closeConfirmationModal()">Continue Shopping</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    addConfirmationModalStyles();
+}
+
+// Track order
+async function trackOrder(orderNumber) {
+    try {
+        const response = await ChandanAPI.trackOrder(orderNumber);
+        showTrackingModal(response.data);
+    } catch (error) {
+        console.error('Failed to track order:', error);
+        showNotification('Failed to track order', 'error');
+    }
+}
+
+// Show tracking modal
+function showTrackingModal(trackingInfo) {
+    const modal = document.createElement('div');
+    modal.className = 'tracking-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content tracking-content">
+            <div class="tracking-header">
+                <h2>Order Tracking</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="tracking-body">
+                <div class="tracking-info">
+                    <h3>Order #${trackingInfo.orderNumber}</h3>
+                    <p><strong>Status:</strong> ${trackingInfo.status.toUpperCase()}</p>
+                    <p><strong>Current Location:</strong> ${trackingInfo.currentLocation}</p>
+                    <p><strong>Estimated Delivery:</strong> ${new Date(trackingInfo.estimatedDelivery).toLocaleDateString('en-IN')}</p>
+                    ${trackingInfo.trackingNumber ? `<p><strong>Tracking Number:</strong> ${trackingInfo.trackingNumber}</p>` : ''}
+                </div>
+                <div class="tracking-timeline">
+                    <h4>Order Timeline</h4>
+                    ${trackingInfo.statusHistory.map(status => `
+                        <div class="timeline-item">
+                            <div class="timeline-date">${new Date(status.timestamp).toLocaleDateString('en-IN')}</div>
+                            <div class="timeline-status">${status.to.toUpperCase()}</div>
+                            ${status.notes ? `<div class="timeline-notes">${status.notes}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    addTrackingModalStyles();
+    
+    modal.querySelector('.modal-close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+// Close confirmation modal
+function closeConfirmationModal() {
+    const modal = document.querySelector('.order-confirmation-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Add cart modal styles
+function addCartModalStyles() {
+    if (document.getElementById('cart-modal-styles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'cart-modal-styles';
+    styles.textContent = `
+        .cart-modal .modal-content { max-width: 800px; max-height: 90vh; overflow-y: auto; }
+        .cart-modal-header { padding: 1rem 2rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .cart-modal-body { padding: 2rem; }
+        .cart-items-list { margin-bottom: 2rem; }
+        .cart-item-full { display: flex; align-items: center; padding: 1rem; border: 1px solid #eee; border-radius: 8px; margin-bottom: 1rem; }
+        .cart-item-full img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 1rem; }
+        .cart-item-details { flex: 1; }
+        .cart-item-details h3 { margin-bottom: 0.5rem; color: var(--primary-color); }
+        .cart-item-price { font-weight: bold; color: var(--accent-color); }
+        .cart-item-options { font-size: 0.9rem; color: var(--text-light); }
+        .quantity-controls { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+        .quantity-controls button { width: 30px; height: 30px; border: 1px solid #ddd; background: white; cursor: pointer; }
+        .quantity-controls input { width: 60px; text-align: center; border: 1px solid #ddd; padding: 0.25rem; }
+        .cart-item-total { text-align: right; }
+        .cart-item-total p { font-weight: bold; margin-bottom: 0.5rem; }
+        .remove-item { background: #dc3545; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
+        .cart-summary { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; }
+        .summary-line { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .summary-line.discount { color: green; }
+        .summary-line.total { border-top: 2px solid #ddd; padding-top: 0.5rem; margin-top: 1rem; font-size: 1.1rem; }
+        .coupon-section { margin: 1rem 0; display: flex; gap: 0.5rem; }
+        .coupon-section input { flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        .coupon-section button { padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .cart-actions { display: flex; gap: 1rem; margin-top: 1rem; }
+        .cart-actions button { flex: 1; padding: 1rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .empty-cart-message { text-align: center; padding: 2rem; color: var(--text-light); }
+        
+        /* Cart dropdown styles */
+        .cart-container { position: relative; }
+        .cart-button { background: none; border: none; font-size: 1.5rem; cursor: pointer; position: relative; color: var(--text-dark); }
+        .cart-count { position: absolute; top: -8px; right: -8px; background: var(--accent-color); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+        .cart-dropdown { position: absolute; top: 100%; right: 0; width: 350px; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; display: none; }
+        .cart-header { padding: 1rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .cart-header h3 { margin: 0; }
+        .close-cart { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        .cart-items { max-height: 300px; overflow-y: auto; padding: 1rem; }
+        .cart-item { display: flex; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        .cart-item-image { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 0.5rem; }
+        .cart-item-details h4 { margin: 0 0 0.25rem 0; font-size: 0.9rem; }
+        .cart-item-details p { margin: 0; font-size: 0.8rem; color: var(--text-light); }
+        .cart-footer { padding: 1rem; border-top: 1px solid #eee; }
+        .cart-total { margin-bottom: 1rem; text-align: center; }
+        .cart-actions { display: flex; gap: 0.5rem; }
+        .cart-actions button { flex: 1; padding: 0.5rem; border: none; border-radius: 4px; cursor: pointer; }
+        .empty-cart { text-align: center; color: var(--text-light); padding: 2rem; }
+    `;
+    document.head.appendChild(styles);
+}
+
+// Add checkout modal styles
+function addCheckoutModalStyles() {
+    if (document.getElementById('checkout-modal-styles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'checkout-modal-styles';
+    styles.textContent = `
+        .checkout-modal .modal-content { max-width: 1000px; max-height: 90vh; overflow-y: auto; }
+        .checkout-header { padding: 1rem 2rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .checkout-body { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; padding: 2rem; }
+        .checkout-form { }
+        .shipping-section, .payment-section { margin-bottom: 2rem; }
+        .shipping-section h3, .payment-section h3 { color: var(--primary-color); margin-bottom: 1rem; }
+        .shipping-section form { display: grid; gap: 1rem; }
+        .address-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+        .shipping-section input, .shipping-section textarea { padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
+        .shipping-section textarea { min-height: 80px; resize: vertical; }
+        .payment-options { display: grid; gap: 1rem; }
+        .payment-options label { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; }
+        .payment-options label:hover { background: #f8f9fa; }
+        .payment-options input[type="radio"] { margin: 0; }
+        .order-summary { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; height: fit-content; }
+        .order-summary h3 { color: var(--primary-color); margin-bottom: 1rem; }
+        .checkout-items { margin-bottom: 1.5rem; }
+        .checkout-item { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #ddd; }
+        .checkout-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+        .checkout-item .item-details { flex: 1; }
+        .checkout-item h4 { margin: 0 0 0.25rem 0; font-size: 0.9rem; }
+        .checkout-item p { margin: 0; font-weight: bold; }
+        .checkout-item small { color: var(--text-light); }
+        .checkout-totals { margin-bottom: 1.5rem; }
+        .total-line { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .total-line.discount { color: green; }
+        .total-line.final-total { border-top: 2px solid #ddd; padding-top: 0.5rem; margin-top: 1rem; font-weight: bold; }
+        .place-order-btn { width: 100%; padding: 1rem; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .place-order-btn:hover { background: var(--accent-color); }
+        .place-order-btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        @media (max-width: 768px) {
+            .checkout-body { grid-template-columns: 1fr; }
+            .address-row { grid-template-columns: 1fr; }
+        }
+    `;
+    document.head.appendChild(styles);
+}
+
+// Add confirmation modal styles
+function addConfirmationModalStyles() {
+    if (document.getElementById('confirmation-modal-styles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'confirmation-modal-styles';
+    styles.textContent = `
+        .order-confirmation-modal .modal-content { max-width: 500px; text-align: center; }
+        .confirmation-header { padding: 2rem; }
+        .success-icon { width: 80px; height: 80px; background: #28a745; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto 1rem; }
+        .confirmation-header h2 { color: var(--primary-color); margin-bottom: 0.5rem; }
+        .confirmation-body { padding: 0 2rem 2rem; }
+        .order-details { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: left; }
+        .order-details h3 { color: var(--primary-color); margin-bottom: 1rem; }
+        .order-details p { margin-bottom: 0.5rem; }
+        .order-actions { display: flex; gap: 1rem; }
+        .order-actions button { flex: 1; padding: 1rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    `;
+    document.head.appendChild(styles);
+}
+
+// Add tracking modal styles
+function addTrackingModalStyles() {
+    if (document.getElementById('tracking-modal-styles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'tracking-modal-styles';
+    styles.textContent = `
+        .tracking-modal .modal-content { max-width: 600px; }
+        .tracking-header { padding: 1rem 2rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .tracking-body { padding: 2rem; }
+        .tracking-info { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+        .tracking-info h3 { color: var(--primary-color); margin-bottom: 1rem; }
+        .tracking-info p { margin-bottom: 0.5rem; }
+        .tracking-timeline h4 { color: var(--primary-color); margin-bottom: 1rem; }
+        .timeline-item { padding: 1rem; border-left: 3px solid var(--primary-color); margin-left: 1rem; margin-bottom: 1rem; background: #f8f9fa; }
+        .timeline-date { font-weight: bold; color: var(--text-dark); }
+        .timeline-status { color: var(--primary-color); font-weight: bold; margin: 0.25rem 0; }
+        .timeline-notes { color: var(--text-light); font-size: 0.9rem; }
+    `;
+    document.head.appendChild(styles);
 }
 
 // Export API for external use

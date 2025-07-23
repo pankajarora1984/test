@@ -1,7 +1,7 @@
 {
   "name": "chandan-sarees-backend",
   "version": "1.0.0",
-  "description": "Backend API for Chandan Sarees website",
+  "description": "Backend API for Chandan Sarees website with payment integration",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,7 +13,9 @@
     "indian-attire",
     "ecommerce",
     "api",
-    "express"
+    "express",
+    "payment",
+    "razorpay"
   ],
   "author": "Chandan Sarees",
   "license": "MIT",
@@ -24,7 +26,11 @@
     "morgan": "^1.10.0",
     "body-parser": "^1.20.2",
     "dotenv": "^16.3.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "razorpay": "^2.9.2",
+    "crypto": "^1.0.1",
+    "express-rate-limit": "^7.1.5",
+    "joi": "^17.11.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
