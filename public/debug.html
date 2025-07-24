@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug CSS/JS Loading</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { padding: 10px; margin: 10px 0; border: 2px solid #ccc; }
+        .success { border-color: green; background: #e8f5e8; }
+        .error { border-color: red; background: #ffe8e8; }
+        .info { border-color: blue; background: #e8f0ff; }
+    </style>
+</head>
+<body>
+    <h1>CSS/JS Loading Debug Page</h1>
+    
+    <div class="test info">
+        <h3>Current URL Information:</h3>
+        <p>Current URL: <span id="currentUrl"></span></p>
+        <p>Origin: <span id="origin"></span></p>
+        <p>Host: <span id="host"></span></p>
+    </div>
+
+    <div class="test" id="cssTest">
+        <h3>CSS Test</h3>
+        <p>Testing different CSS loading methods:</p>
+        <ul>
+            <li>Relative path: <a href="styles.css" target="_blank">styles.css</a></li>
+            <li>Absolute path: <a href="/styles.css" target="_blank">/styles.css</a></li>
+            <li>Full URL: <a href="" id="fullCssUrl" target="_blank">Full URL CSS</a></li>
+        </ul>
+    </div>
+
+    <div class="test" id="jsTest">
+        <h3>JavaScript Test</h3>
+        <p>Testing different JS loading methods:</p>
+        <ul>
+            <li>Relative path: <a href="script.js" target="_blank">script.js</a></li>
+            <li>Absolute path: <a href="/script.js" target="_blank">/script.js</a></li>
+            <li>Full URL: <a href="" id="fullJsUrl" target="_blank">Full URL JS</a></li>
+        </ul>
+    </div>
+
+    <div class="test" id="fetchTest">
+        <h3>Fetch API Test</h3>
+        <p>Testing if we can fetch the files via JavaScript:</p>
+        <button onclick="testFetch('/styles.css', 'css')">Test CSS Fetch</button>
+        <button onclick="testFetch('/script.js', 'js')">Test JS Fetch</button>
+        <div id="fetchResults"></div>
+    </div>
+
+    <div class="test" id="networkTest">
+        <h3>Network Test Instructions</h3>
+        <ol>
+            <li>Open Developer Tools (F12)</li>
+            <li>Go to Network tab</li>
+            <li>Refresh this page</li>
+            <li>Look for styles.css and script.js requests</li>
+            <li>Check their status codes and response headers</li>
+        </ol>
+    </div>
+
+    <div class="test" id="corsTest">
+        <h3>CORS Test</h3>
+        <p>If CSS/JS fail to load, it might be a CORS issue.</p>
+        <p>Check if these URLs work in new tabs:</p>
+        <ul id="corsUrls"></ul>
+    </div>
+
+    <!-- Try to load CSS with different methods -->
+    <link rel="stylesheet" href="styles.css" id="relativeCSS">
+    <link rel="stylesheet" href="/styles.css" id="absoluteCSS">
+    
+    <script>
+        // Fill in URL information
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('origin').textContent = window.location.origin;
+        document.getElementById('host').textContent = window.location.host;
+        
+        // Set full URLs
+        const fullCssUrl = window.location.origin + '/styles.css';
+        const fullJsUrl = window.location.origin + '/script.js';
+        document.getElementById('fullCssUrl').href = fullCssUrl;
+        document.getElementById('fullCssUrl').textContent = fullCssUrl;
+        document.getElementById('fullJsUrl').href = fullJsUrl;
+        document.getElementById('fullJsUrl').textContent = fullJsUrl;
+        
+        // Add CORS test URLs
+        const corsUrls = document.getElementById('corsUrls');
+        corsUrls.innerHTML = `
+            <li><a href="${fullCssUrl}" target="_blank">${fullCssUrl}</a></li>
+            <li><a href="${fullJsUrl}" target="_blank">${fullJsUrl}</a></li>
+        `;
+        
+        // Test fetch function
+        async function testFetch(url, type) {
+            const resultsDiv = document.getElementById('fetchResults');
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                if (response.ok) {
+                    resultsDiv.innerHTML += `<p class="success">✅ ${type.toUpperCase()} fetch successful (${response.status}). Content length: ${text.length}</p>`;
+                } else {
+                    resultsDiv.innerHTML += `<p class="error">❌ ${type.toUpperCase()} fetch failed: ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<p class="error">❌ ${type.toUpperCase()} fetch error: ${error.message}</p>`;
+            }
+        }
+        
+        // Check if CSS loaded by looking for computed styles
+        setTimeout(() => {
+            const testElement = document.body;
+            const computedStyle = window.getComputedStyle(testElement);
+            
+            if (computedStyle.fontFamily.includes('Arial')) {
+                document.getElementById('cssTest').className = 'test success';
+                document.getElementById('cssTest').innerHTML += '<p class="success">✅ CSS appears to be loaded (font-family detected)</p>';
+            } else {
+                document.getElementById('cssTest').className = 'test error';
+                document.getElementById('cssTest').innerHTML += '<p class="error">❌ CSS may not be loaded</p>';
+            }
+        }, 1000);
+        
+        // Try to dynamically load the script
+        const script = document.createElement('script');
+        script.src = '/script.js';
+        script.onload = function() {
+            document.getElementById('jsTest').className = 'test success';
+            document.getElementById('jsTest').innerHTML += '<p class="success">✅ JavaScript loaded successfully</p>';
+        };
+        script.onerror = function() {
+            document.getElementById('jsTest').className = 'test error';
+            document.getElementById('jsTest').innerHTML += '<p class="error">❌ JavaScript failed to load</p>';
+        };
+        document.head.appendChild(script);
+        
+        // Log all this to console as well
+        console.log('Debug Info:', {
+            url: window.location.href,
+            origin: window.location.origin,
+            host: window.location.host,
+            cssUrl: fullCssUrl,
+            jsUrl: fullJsUrl
+        });
+    </script>
+</body>
+</html>

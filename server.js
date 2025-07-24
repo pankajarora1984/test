@@ -4,17 +4,22 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
+const http = require('http');
 require('dotenv').config();
 
 // Import enhanced logging
 const { logger, createRequestLogger } = require('./utils/logger');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const HTTP_PORT = process.env.HTTP_PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 
 // Log application startup
 logger.info('🚀 Starting Chandan Sarees E-commerce Server', {
-    port: PORT,
+    httpPort: HTTP_PORT,
+    httpsPort: HTTPS_PORT,
     nodeEnv: process.env.NODE_ENV || 'development',
     logLevel: process.env.LOG_LEVEL || 'INFO'
 });
@@ -142,12 +147,43 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        version: require('./package.json').version,
+        version: '1.0.0',
         environment: process.env.NODE_ENV || 'development'
     };
     
     logger.debug('🏥 Health check requested', healthData);
-    res.status(200).json(healthData);
+    res.json(healthData);
+});
+
+// Debug endpoint to help diagnose issues
+app.get('/debug', (req, res) => {
+    const debugInfo = {
+        timestamp: new Date().toISOString(),
+        request: {
+            ip: req.ip,
+            ips: req.ips,
+            method: req.method,
+            url: req.url,
+            headers: req.headers,
+            userAgent: req.get('User-Agent')
+        },
+                 server: {
+             httpPort: HTTP_PORT,
+             httpsPort: HTTPS_PORT,
+             environment: process.env.NODE_ENV || 'development',
+             uptime: process.uptime(),
+             cwd: process.cwd(),
+             staticPath: path.join(__dirname, 'public')
+         },
+        files: {
+            stylesExists: fs.existsSync(path.join(__dirname, 'public', 'styles.css')),
+            scriptExists: fs.existsSync(path.join(__dirname, 'public', 'script.js')),
+            indexExists: fs.existsSync(path.join(__dirname, 'public', 'index.html'))
+        }
+    };
+    
+    logger.info('🔍 Debug info requested', debugInfo);
+    res.json(debugInfo);
 });
 
 // Serve frontend for all other routes (SPA support)
@@ -188,40 +224,82 @@ app.use('/api/*', (req, res) => {
     });
 });
 
-// Start server with enhanced logging - bind to all interfaces for AWS EC2
-const server = app.listen(PORT, '0.0.0.0', () => {
-    logger.info('🎉 Chandan Sarees E-commerce Server Started Successfully', {
-        port: PORT,
+// SSL Certificate configuration
+let httpsOptions = {};
+try {
+    if (fs.existsSync('./ssl/private-key.pem') && fs.existsSync('./ssl/certificate.pem')) {
+        httpsOptions = {
+            key: fs.readFileSync('./ssl/private-key.pem', 'utf8'),
+            cert: fs.readFileSync('./ssl/certificate.pem', 'utf8')
+        };
+        logger.info('✅ SSL certificates loaded successfully');
+    } else {
+        logger.warn('⚠️  SSL certificates not found, HTTPS will not be available');
+    }
+} catch (error) {
+    logger.error('❌ Failed to load SSL certificates:', error.message);
+}
+
+// Start HTTP server
+const httpServer = http.createServer(app);
+httpServer.listen(HTTP_PORT, '0.0.0.0', () => {
+    logger.info('🎉 HTTP Server Started Successfully', {
+        port: HTTP_PORT,
         environment: process.env.NODE_ENV || 'development',
-        logLevel: process.env.LOG_LEVEL || 'INFO',
-        urls: {
-            api: `http://localhost:${PORT}/api`,
-            website: `http://localhost:${PORT}`,
-            health: `http://localhost:${PORT}/health`
-        }
+        logLevel: process.env.LOG_LEVEL || 'DEBUG'
     });
-    
-    console.log(`🚀 Chandan Sarees API Server running on port ${PORT}`);
-    console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
-    console.log(`🌐 Website: http://localhost:${PORT}`);
-    console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
-    console.log(`📄 Log files location: ./logs/`);
+    console.log(`🚀 HTTP Server running on port ${HTTP_PORT}`);
+    console.log(`🌐 Website: http://13.51.196.99:${HTTP_PORT}`);
 });
+
+// Start HTTPS server if certificates are available
+let httpsServer = null;
+if (httpsOptions.key && httpsOptions.cert) {
+    httpsServer = https.createServer(httpsOptions, app);
+    httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+        logger.info('🎉 HTTPS Server Started Successfully', {
+            port: HTTPS_PORT,
+            environment: process.env.NODE_ENV || 'development',
+            logLevel: process.env.LOG_LEVEL || 'DEBUG'
+        });
+        console.log(`🔒 HTTPS Server running on port ${HTTPS_PORT}`);
+        console.log(`🌐 Secure Website: https://13.51.196.99:${HTTPS_PORT}`);
+    });
+}
+
+console.log(`📚 API Documentation: http://13.51.196.99:${HTTP_PORT}/api`);
+console.log(`❤️  Health Check: http://13.51.196.99:${HTTP_PORT}/health`);
+console.log(`🔍 Debug Info: http://13.51.196.99:${HTTP_PORT}/debug`);
+console.log(`📄 Log files location: ./logs/`);
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
     logger.info('🛑 SIGTERM received, shutting down gracefully');
-    server.close(() => {
-        logger.info('✅ Server closed successfully');
-        process.exit(0);
+    httpServer.close(() => {
+        if (httpsServer) {
+            httpsServer.close(() => {
+                logger.info('✅ Both servers closed successfully');
+                process.exit(0);
+            });
+        } else {
+            logger.info('✅ HTTP server closed successfully');
+            process.exit(0);
+        }
     });
 });
 
 process.on('SIGINT', () => {
     logger.info('🛑 SIGINT received, shutting down gracefully');
-    server.close(() => {
-        logger.info('✅ Server closed successfully');
-        process.exit(0);
+    httpServer.close(() => {
+        if (httpsServer) {
+            httpsServer.close(() => {
+                logger.info('✅ Both servers closed successfully');
+                process.exit(0);
+            });
+        } else {
+            logger.info('✅ HTTP server closed successfully');
+            process.exit(0);
+        }
     });
 });
 
