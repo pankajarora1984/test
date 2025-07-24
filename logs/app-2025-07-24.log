@@ -16,3 +16,17 @@
 [2025-07-24T04:11:20.045Z] [INFO] HTTP GET /test_user {"method":"GET","url":"/test_user","userAgent":"curl/8.12.1","ip":"::1","status":200,"duration":"2ms","timestamp":"2025-07-24T04:11:20.045Z"}
 [2025-07-24T04:12:32.437Z] [INFO] HTTP GET /api/nonexistent {"method":"GET","url":"/api/nonexistent","userAgent":"curl/8.12.1","ip":"::1","status":200,"duration":"3ms","timestamp":"2025-07-24T04:12:32.437Z"}
 [2025-07-24T04:12:39.091Z] [ERROR] HTTP GET /nonexistent {"method":"GET","url":"/nonexistent","userAgent":"curl/8.12.1","ip":"::1","status":404,"duration":"2ms","timestamp":"2025-07-24T04:12:39.091Z"}
+[2025-07-24T04:55:24.104Z] [INFO] 🛑 SIGTERM received, shutting down gracefully
+[2025-07-24T04:55:24.105Z] [INFO] ✅ Server closed successfully
+[2025-07-24T04:55:26.313Z] [INFO] 🚀 Starting Chandan Sarees E-commerce Server {"port":"3000","nodeEnv":"development","logLevel":"DEBUG"}
+[2025-07-24T04:55:26.314Z] [DEBUG] ✅ Helmet security middleware enabled
+[2025-07-24T04:55:26.315Z] [DEBUG] ✅ CORS middleware enabled
+[2025-07-24T04:55:26.315Z] [DEBUG] ✅ Enhanced request logging enabled
+[2025-07-24T04:55:26.315Z] [DEBUG] ✅ Body parser middleware enabled
+[2025-07-24T04:55:26.315Z] [DEBUG] ✅ Static file serving enabled for /public
+[2025-07-24T04:55:26.316Z] [DEBUG] 📁 Loading route modules...
+[2025-07-24T04:55:26.349Z] [DEBUG] ✅ All route modules loaded successfully
+[2025-07-24T04:55:26.349Z] [INFO] 🛣️  API routes registered successfully {"routes":["/api/products","/api/categories","/api/contact","/api/cart","/api/orders"]}
+[2025-07-24T04:55:26.355Z] [INFO] 🎉 Chandan Sarees E-commerce Server Started Successfully {"port":"3000","environment":"development","logLevel":"DEBUG","urls":{"api":"http://localhost:3000/api","website":"http://localhost:3000","health":"http://localhost:3000/health"}}
+[2025-07-24T04:55:48.580Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T04:55:48.580Z","uptime":22.340257443,"memory":{"rss":67788800,"heapTotal":12648448,"heapUsed":10305624,"external":3437670,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T04:55:48.583Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"4ms","timestamp":"2025-07-24T04:55:48.583Z"}
