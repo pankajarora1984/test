@@ -1,0 +1,18 @@
+[2025-07-24T04:10:38.399Z] [INFO] 🚀 Starting Chandan Sarees E-commerce Server {"port":"3000","nodeEnv":"development","logLevel":"DEBUG"}
+[2025-07-24T04:10:38.400Z] [DEBUG] ✅ Helmet security middleware enabled
+[2025-07-24T04:10:38.400Z] [DEBUG] ✅ CORS middleware enabled
+[2025-07-24T04:10:38.401Z] [DEBUG] ✅ Enhanced request logging enabled
+[2025-07-24T04:10:38.401Z] [DEBUG] ✅ Body parser middleware enabled
+[2025-07-24T04:10:38.401Z] [DEBUG] ✅ Static file serving enabled for /public
+[2025-07-24T04:10:38.401Z] [DEBUG] 📁 Loading route modules...
+[2025-07-24T04:10:38.432Z] [DEBUG] ✅ All route modules loaded successfully
+[2025-07-24T04:10:38.432Z] [INFO] 🛣️  API routes registered successfully {"routes":["/api/products","/api/categories","/api/contact","/api/cart","/api/orders"]}
+[2025-07-24T04:10:38.434Z] [INFO] 🎉 Chandan Sarees E-commerce Server Started Successfully {"port":"3000","environment":"development","logLevel":"DEBUG","urls":{"api":"http://localhost:3000/api","website":"http://localhost:3000","health":"http://localhost:3000/health"}}
+[2025-07-24T04:11:02.988Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T04:11:02.987Z","uptime":24.656734339,"memory":{"rss":66629632,"heapTotal":12124160,"heapUsed":10142480,"external":3425567,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T04:11:02.991Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"::1","status":200,"duration":"5ms","timestamp":"2025-07-24T04:11:02.990Z"}
+[2025-07-24T04:11:14.346Z] [INFO] HTTP GET / {"method":"GET","url":"/","userAgent":"curl/8.12.1","ip":"::1","status":200,"duration":"2ms","timestamp":"2025-07-24T04:11:14.346Z"}
+[2025-07-24T04:11:20.044Z] [DEBUG] 📥 Getting cart for user {"userId":"test_user"}
+[2025-07-24T04:11:20.044Z] [INFO] API GET /cart/:userId {"endpoint":"/cart/:userId","method":"GET","status":200,"duration":"0ms","bodySize":36,"timestamp":"2025-07-24T04:11:20.044Z"}
+[2025-07-24T04:11:20.045Z] [INFO] HTTP GET /test_user {"method":"GET","url":"/test_user","userAgent":"curl/8.12.1","ip":"::1","status":200,"duration":"2ms","timestamp":"2025-07-24T04:11:20.045Z"}
+[2025-07-24T04:12:32.437Z] [INFO] HTTP GET /api/nonexistent {"method":"GET","url":"/api/nonexistent","userAgent":"curl/8.12.1","ip":"::1","status":200,"duration":"3ms","timestamp":"2025-07-24T04:12:32.437Z"}
+[2025-07-24T04:12:39.091Z] [ERROR] HTTP GET /nonexistent {"method":"GET","url":"/nonexistent","userAgent":"curl/8.12.1","ip":"::1","status":404,"duration":"2ms","timestamp":"2025-07-24T04:12:39.091Z"}

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
+const { logger } = require('../utils/logger');
 
 // In-memory cart storage (in production, use database with user sessions)
 let carts = new Map(); // userId -> cart object
@@ -34,15 +35,24 @@ const calculateCartTotals = (cart) => {
 
 // GET /api/cart/:userId - Get user's cart
 router.get('/:userId', (req, res) => {
+    const start = Date.now();
     try {
         const { userId } = req.params;
+        logger.debug('📥 Getting cart for user', { userId });
+        
         const cart = getCart(userId);
+        const duration = Date.now() - start;
+        
+        logger.api('/cart/:userId', 'GET', 200, duration, { userId, itemCount: cart.items.length });
         
         res.json({
             success: true,
             data: cart
         });
     } catch (error) {
+        const duration = Date.now() - start;
+        logger.api('/cart/:userId', 'GET', 500, duration, req.params, error);
+        
         res.status(500).json({
             success: false,
             error: 'Failed to fetch cart',

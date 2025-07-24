@@ -6,25 +6,51 @@ const bodyParser = require('body-parser');
 const path = require('path');
 require('dotenv').config();
 
+// Import enhanced logging
+const { logger, createRequestLogger } = require('./utils/logger');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Log application startup
+logger.info('🚀 Starting Chandan Sarees E-commerce Server', {
+    port: PORT,
+    nodeEnv: process.env.NODE_ENV || 'development',
+    logLevel: process.env.LOG_LEVEL || 'INFO'
+});
+
 // Middleware
 app.use(helmet());
+logger.debug('✅ Helmet security middleware enabled');
+
 app.use(cors());
-app.use(morgan('combined'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+logger.debug('✅ CORS middleware enabled');
+
+// Enhanced request logging
+if (process.env.LOG_REQUESTS === 'true') {
+    app.use(createRequestLogger());
+    logger.debug('✅ Enhanced request logging enabled');
+} else {
+    app.use(morgan('combined'));
+    logger.debug('✅ Basic Morgan logging enabled');
+}
+
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+logger.debug('✅ Body parser middleware enabled');
 
 // Serve static files (frontend)
 app.use(express.static(path.join(__dirname, 'public')));
+logger.debug('✅ Static file serving enabled for /public');
 
 // Import routes
+logger.debug('📁 Loading route modules...');
 const productsRouter = require('./routes/products');
 const categoriesRouter = require('./routes/categories');
 const contactRouter = require('./routes/contact');
 const cartRouter = require('./routes/cart');
 const ordersRouter = require('./routes/orders');
+logger.debug('✅ All route modules loaded successfully');
 
 // API Routes
 app.use('/api/products', productsRouter);
@@ -32,6 +58,9 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/orders', ordersRouter);
+logger.info('🛣️  API routes registered successfully', {
+    routes: ['/api/products', '/api/categories', '/api/contact', '/api/cart', '/api/orders']
+});
 
 // API documentation endpoint
 app.get('/api', (req, res) => {
@@ -87,11 +116,17 @@ app.get('/api', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.status(200).json({
+    const healthData = {
         status: 'OK',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        version: require('./package.json').version,
+        environment: process.env.NODE_ENV || 'development'
+    };
+    
+    logger.debug('🏥 Health check requested', healthData);
+    res.status(200).json(healthData);
 });
 
 // Serve frontend for all other routes (SPA support)
@@ -101,27 +136,89 @@ app.get('*', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    logger.error('💥 Unhandled server error', {
+        error: err.message,
+        stack: err.stack,
+        url: req.originalUrl,
+        method: req.method,
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent')
+    });
+    
     res.status(500).json({
-        error: 'Something went wrong!',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+        success: false,
+        error: 'Internal Server Error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong!'
     });
 });
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
+    logger.warn('🔍 API endpoint not found', {
+        url: req.originalUrl,
+        method: req.method,
+        ip: req.ip || req.connection.remoteAddress
+    });
+    
     res.status(404).json({
+        success: false,
         error: 'API endpoint not found',
-        path: req.originalUrl
+        message: `The requested API endpoint ${req.originalUrl} does not exist`
     });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server with enhanced logging
+const server = app.listen(PORT, () => {
+    logger.info('🎉 Chandan Sarees E-commerce Server Started Successfully', {
+        port: PORT,
+        environment: process.env.NODE_ENV || 'development',
+        logLevel: process.env.LOG_LEVEL || 'INFO',
+        urls: {
+            api: `http://localhost:${PORT}/api`,
+            website: `http://localhost:${PORT}`,
+            health: `http://localhost:${PORT}/health`
+        }
+    });
+    
     console.log(`🚀 Chandan Sarees API Server running on port ${PORT}`);
     console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
     console.log(`🌐 Website: http://localhost:${PORT}`);
     console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
+    console.log(`📄 Log files location: ./logs/`);
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+    logger.info('🛑 SIGTERM received, shutting down gracefully');
+    server.close(() => {
+        logger.info('✅ Server closed successfully');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    logger.info('🛑 SIGINT received, shutting down gracefully');
+    server.close(() => {
+        logger.info('✅ Server closed successfully');
+        process.exit(0);
+    });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+    logger.error('💥 Uncaught Exception', {
+        error: err.message,
+        stack: err.stack
+    });
+    process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error('💥 Unhandled Promise Rejection', {
+        reason: reason,
+        promise: promise
+    });
 });
 
 module.exports = app;
