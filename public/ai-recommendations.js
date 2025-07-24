@@ -662,8 +662,16 @@ class AIRecommendations {
         const navMenu = document.querySelector('.nav-menu');
         if (navMenu && !document.querySelector('.ai-rec-nav-btn')) {
             const aiNavItem = document.createElement('li');
-            aiNavItem.innerHTML = '<button class="ai-rec-nav-btn" onclick="aiRecommendations.showRecommendationModal()">🤖 AI Recommendations</button>';
+            aiNavItem.innerHTML = '<button class="ai-rec-nav-btn" id="ai-nav-btn">🤖 AI Recommendations</button>';
             navMenu.appendChild(aiNavItem);
+            
+            // Add event listener for navigation button
+            const navBtn = document.getElementById('ai-nav-btn');
+            if (navBtn) {
+                navBtn.addEventListener('click', () => {
+                    this.showRecommendationModal();
+                });
+            }
         }
 
         // Add floating AI button
@@ -671,11 +679,22 @@ class AIRecommendations {
             const floatingBtn = document.createElement('div');
             floatingBtn.className = 'floating-ai-btn';
             floatingBtn.innerHTML = `
-                <button onclick="aiRecommendations.showRecommendationModal()" title="Get AI Recommendations">
+                <button id="floating-ai-btn" title="Get AI Recommendations" type="button">
                     🤖
                 </button>
             `;
             document.body.appendChild(floatingBtn);
+            
+            // Add event listener for floating button
+            const floatingButton = document.getElementById('floating-ai-btn');
+            if (floatingButton) {
+                floatingButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('AI button clicked!'); // Debug log
+                    this.showRecommendationModal();
+                });
+            }
         }
 
         // Add styles for the buttons
@@ -709,7 +728,8 @@ class AIRecommendations {
                 position: fixed;
                 bottom: 80px;
                 right: 20px;
-                z-index: 1000;
+                z-index: 10002;
+                pointer-events: all;
             }
             
             .floating-ai-btn button {
@@ -726,11 +746,39 @@ class AIRecommendations {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                pointer-events: all;
+                position: relative;
+                z-index: 1;
             }
             
             .floating-ai-btn button:hover {
                 transform: scale(1.1);
                 box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+            }
+            
+            .floating-ai-btn button:active {
+                transform: scale(0.95);
+            }
+            
+            /* Add pulse animation to make it more noticeable */
+            .floating-ai-btn button::before {
+                content: '';
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                right: -2px;
+                bottom: -2px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #8B0000, #A0522D);
+                opacity: 0.7;
+                z-index: -1;
+                animation: aiPulse 2s infinite;
+            }
+            
+            @keyframes aiPulse {
+                0% { transform: scale(1); opacity: 0.7; }
+                50% { transform: scale(1.1); opacity: 0.3; }
+                100% { transform: scale(1); opacity: 0.7; }
             }
             
             @media (max-width: 768px) {
@@ -756,17 +804,60 @@ const aiRecommendations = new AIRecommendations();
 
 // Add event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Add AI recommendation buttons
-    aiRecommendations.addAIRecommendationButton();
+    // Wait a bit for other scripts to load, then add AI recommendation buttons
+    setTimeout(() => {
+        console.log('🤖 Initializing AI Recommendation System...');
+        aiRecommendations.addAIRecommendationButton();
+        console.log('🤖 AI Recommendation buttons added');
+        
+        // Debug: Check if buttons exist
+        const floatingBtn = document.getElementById('floating-ai-btn');
+        const navBtn = document.getElementById('ai-nav-btn');
+        console.log('Floating button found:', !!floatingBtn);
+        console.log('Nav button found:', !!navBtn);
+        
+        // Double-check event listeners after a delay
+        setTimeout(() => {
+            const floatingButton = document.getElementById('floating-ai-btn');
+            if (floatingButton && !floatingButton.hasAttribute('data-listener-added')) {
+                console.log('🔧 Re-adding floating button event listener');
+                floatingButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('AI floating button clicked!');
+                    aiRecommendations.showRecommendationModal();
+                });
+                floatingButton.setAttribute('data-listener-added', 'true');
+            }
+        }, 1000);
+    }, 500);
 
-    // Add event delegation for recommendation actions
-    document.addEventListener('click', async (e) => {
-        // Handle view product button in recommendations
-        if (e.target.classList.contains('view-product-btn')) {
-            const productId = e.target.getAttribute('data-product-id');
-            await aiRecommendations.trackInteraction('click', productId);
-            viewProductDetails(productId);
-        }
+         // Add event delegation for recommendation actions
+     document.addEventListener('click', async (e) => {
+         // Handle floating AI button click as fallback
+         if (e.target.id === 'floating-ai-btn' || e.target.closest('#floating-ai-btn')) {
+             e.preventDefault();
+             e.stopPropagation();
+             console.log('🤖 AI button clicked via delegation');
+             await aiRecommendations.showRecommendationModal();
+             return;
+         }
+         
+         // Handle nav AI button click as fallback
+         if (e.target.id === 'ai-nav-btn' || e.target.closest('#ai-nav-btn')) {
+             e.preventDefault();
+             e.stopPropagation();
+             console.log('🤖 AI nav button clicked via delegation');
+             await aiRecommendations.showRecommendationModal();
+             return;
+         }
+         
+         // Handle view product button in recommendations
+         if (e.target.classList.contains('view-product-btn')) {
+             const productId = e.target.getAttribute('data-product-id');
+             await aiRecommendations.trackInteraction('click', productId);
+             viewProductDetails(productId);
+         }
 
         // Handle add to cart button in recommendations
         if (e.target.classList.contains('add-to-cart-btn')) {
@@ -877,3 +968,16 @@ function addRecommendationsToProductModal(recommendations) {
 }
 
 console.log('🤖 AI Recommendations System Loaded');
+
+// Global function to test AI recommendations (for debugging)
+window.testAI = function() {
+    console.log('🧪 Testing AI Recommendations...');
+    if (window.aiRecommendations) {
+        aiRecommendations.showRecommendationModal();
+    } else {
+        console.error('❌ aiRecommendations not found');
+    }
+};
+
+// Make aiRecommendations globally accessible for debugging
+window.aiRecommendations = aiRecommendations;
