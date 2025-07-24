@@ -3,6 +3,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const { logger } = require('../utils/logger');
 
 // Initialize Razorpay (use test credentials for development)
 const razorpay = new Razorpay({

@@ -5,7 +5,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:logs": "node scripts/start-with-logs.js",
     "dev": "nodemon server.js",
+    "dev:logs": "LOG_LEVEL=DEBUG node scripts/start-with-logs.js",
+    "logs:view": "tail -f logs/app-$(date +%Y-%m-%d).log",
+    "logs:errors": "grep 'ERROR' logs/app-$(date +%Y-%m-%d).log || echo 'No errors found'",
+    "logs:clear": "rm -f logs/*.log && echo 'Log files cleared'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
