@@ -70,29 +70,41 @@ echo ""
 echo "3️⃣  NETWORK CONFIGURATION"
 echo "========================="
 print_status "Checking port 3000 binding:"
-PORT_BINDING=$(netstat -tlnp 2>/dev/null | grep :3000 || ss -tlnp | grep :3000)
-if [ -n "$PORT_BINDING" ]; then
-    print_success "Port 3000 is bound:"
-    echo "$PORT_BINDING"
+if grep -q ":0BB8" /proc/net/tcp 2>/dev/null; then
+    print_success "Port 3000 is bound (found in /proc/net/tcp):"
+    grep ":0BB8" /proc/net/tcp | head -3
 else
     print_error "Port 3000 is not bound!"
 fi
 
-print_status "Checking all listening ports:"
-netstat -tlnp 2>/dev/null | head -10 || ss -tlnp | head -10
+print_status "Checking all listening ports from /proc/net/tcp:"
+echo "Active TCP connections (first 10):"
+head -10 /proc/net/tcp 2>/dev/null || echo "Cannot read /proc/net/tcp"
 
 print_status "Testing local connectivity:"
-LOCAL_TEST=$(curl -s --max-time 5 http://localhost:3000/health 2>/dev/null)
-if [ -n "$LOCAL_TEST" ]; then
-    print_success "Local curl works: $LOCAL_TEST"
+# Test with verbose output to see what's happening
+echo "Testing localhost:3000/health..."
+if timeout 10 curl -f --connect-timeout 5 http://localhost:3000/health; then
+    print_success "✅ localhost:3000 works!"
 else
-    print_error "Local curl failed!"
-    # Try with different addresses
-    print_status "Trying 127.0.0.1:3000..."
-    curl -s --max-time 5 http://127.0.0.1:3000/health || print_error "127.0.0.1 failed"
+    print_error "❌ localhost:3000 failed"
     
-    print_status "Trying 0.0.0.0:3000..."
-    curl -s --max-time 5 http://0.0.0.0:3000/health || print_error "0.0.0.0 failed"
+    # Try with different addresses only if first fails
+    echo ""
+    print_status "Trying 127.0.0.1:3000..."
+    if timeout 10 curl -f --connect-timeout 5 http://127.0.0.1:3000/health; then
+        print_success "✅ 127.0.0.1:3000 works!"
+    else
+        print_error "❌ 127.0.0.1:3000 failed"
+    fi
+    
+    echo ""
+    print_status "Trying with IP from /proc/net/tcp..."
+    if timeout 10 curl -f --connect-timeout 5 http://0.0.0.0:3000/health; then
+        print_success "✅ 0.0.0.0:3000 works!"
+    else
+        print_error "❌ 0.0.0.0:3000 failed"
+    fi
 fi
 echo ""
 
