@@ -19,9 +19,20 @@ logger.info('🚀 Starting Chandan Sarees E-commerce Server', {
     logLevel: process.env.LOG_LEVEL || 'INFO'
 });
 
-// Middleware
-app.use(helmet());
-logger.debug('✅ Helmet security middleware enabled');
+// Middleware - Security with relaxed CSP for static assets
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"]
+        }
+    }
+}));
+logger.debug('✅ Helmet security middleware enabled with relaxed CSP');
 
 app.use(cors());
 logger.debug('✅ CORS middleware enabled');
@@ -39,9 +50,19 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 logger.debug('✅ Body parser middleware enabled');
 
-// Serve static files (frontend)
-app.use(express.static(path.join(__dirname, 'public')));
-logger.debug('✅ Static file serving enabled for /public');
+// Serve static files (frontend) with proper MIME types
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        } else if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        } else if (path.endsWith('.html')) {
+            res.setHeader('Content-Type', 'text/html');
+        }
+    }
+}));
+logger.debug('✅ Static file serving enabled for /public with explicit MIME types');
 
 // Import routes
 logger.debug('📁 Loading route modules...');
