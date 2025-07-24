@@ -167,8 +167,8 @@ app.use('/api/*', (req, res) => {
     });
 });
 
-// Start server with enhanced logging
-const server = app.listen(PORT, () => {
+// Start server with enhanced logging - bind to all interfaces for AWS EC2
+const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info('🎉 Chandan Sarees E-commerce Server Started Successfully', {
         port: PORT,
         environment: process.env.NODE_ENV || 'development',

@@ -11,6 +11,8 @@
     "logs:view": "tail -f logs/app-$(date +%Y-%m-%d).log",
     "logs:errors": "grep 'ERROR' logs/app-$(date +%Y-%m-%d).log || echo 'No errors found'",
     "logs:clear": "rm -f logs/*.log && echo 'Log files cleared'",
+    "aws:debug": "bash scripts/aws-deploy-debug.sh",
+    "aws:start": "PORT=3000 NODE_ENV=production npm run start:logs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
