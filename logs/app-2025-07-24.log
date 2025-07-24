@@ -55,3 +55,29 @@
 [2025-07-24T05:31:35.883Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T05:31:35.883Z","uptime":2169.64365615,"memory":{"rss":69492736,"heapTotal":14221312,"heapUsed":11162072,"external":3437710,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
 [2025-07-24T05:31:35.884Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"2ms","timestamp":"2025-07-24T05:31:35.884Z"}
 [2025-07-24T05:31:41.619Z] [INFO] HTTP GET / {"method":"GET","url":"/","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"5ms","timestamp":"2025-07-24T05:31:41.619Z"}
+[2025-07-24T05:32:12.301Z] [INFO] 🛑 SIGTERM received, shutting down gracefully
+[2025-07-24T05:32:12.301Z] [INFO] ✅ Server closed successfully
+[2025-07-24T05:32:28.762Z] [INFO] 🚀 Starting Chandan Sarees E-commerce Server {"port":"3000","nodeEnv":"development","logLevel":"DEBUG"}
+[2025-07-24T05:32:28.764Z] [DEBUG] ✅ Helmet security middleware enabled
+[2025-07-24T05:32:28.764Z] [DEBUG] ✅ CORS middleware enabled
+[2025-07-24T05:32:28.764Z] [DEBUG] ✅ Enhanced request logging enabled
+[2025-07-24T05:32:28.764Z] [DEBUG] ✅ Body parser middleware enabled
+[2025-07-24T05:32:28.765Z] [DEBUG] ✅ Static file serving enabled for /public
+[2025-07-24T05:32:28.765Z] [DEBUG] 📁 Loading route modules...
+[2025-07-24T05:32:28.801Z] [DEBUG] ✅ All route modules loaded successfully
+[2025-07-24T05:32:28.801Z] [INFO] 🛣️  API routes registered successfully {"routes":["/api/products","/api/categories","/api/contact","/api/cart","/api/orders"]}
+[2025-07-24T05:32:28.808Z] [INFO] 🎉 Chandan Sarees E-commerce Server Started Successfully {"port":"3000","environment":"development","logLevel":"DEBUG","urls":{"api":"http://localhost:3000/api","website":"http://localhost:3000","health":"http://localhost:3000/health"}}
+[2025-07-24T05:32:41.501Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T05:32:41.500Z","uptime":12.83841719,"memory":{"rss":67485696,"heapTotal":12386304,"heapUsed":10307936,"external":3437670,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T05:32:41.503Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"5ms","timestamp":"2025-07-24T05:32:41.503Z"}
+[2025-07-24T05:33:09.978Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T05:33:09.978Z","uptime":41.316028958,"memory":{"rss":67747840,"heapTotal":12386304,"heapUsed":10573624,"external":3437710,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T05:33:09.979Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"2ms","timestamp":"2025-07-24T05:33:09.979Z"}
+[2025-07-24T05:33:09.985Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T05:33:09.985Z","uptime":41.323416689,"memory":{"rss":67747840,"heapTotal":12386304,"heapUsed":10689136,"external":3437710,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T05:33:09.986Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"1ms","timestamp":"2025-07-24T05:33:09.986Z"}
+[2025-07-24T05:33:09.992Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T05:33:09.991Z","uptime":41.329604103,"memory":{"rss":67878912,"heapTotal":12648448,"heapUsed":10794168,"external":3437710,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T05:33:09.992Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"1ms","timestamp":"2025-07-24T05:33:09.992Z"}
+[2025-07-24T05:33:09.998Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T05:33:09.997Z","uptime":41.335575217,"memory":{"rss":68009984,"heapTotal":12648448,"heapUsed":10900008,"external":3437710,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T05:33:09.998Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"1ms","timestamp":"2025-07-24T05:33:09.998Z"}
+[2025-07-24T05:33:10.004Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T05:33:10.004Z","uptime":41.342435454,"memory":{"rss":68141056,"heapTotal":12648448,"heapUsed":10999600,"external":3437710,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
+[2025-07-24T05:33:10.005Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"172.30.0.2","status":200,"duration":"1ms","timestamp":"2025-07-24T05:33:10.005Z"}
+[2025-07-24T05:33:10.012Z] [INFO] HTTP GET / {"method":"GET","url":"/","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"2ms","timestamp":"2025-07-24T05:33:10.012Z"}
+[2025-07-24T05:33:10.018Z] [INFO] HTTP GET /api {"method":"GET","url":"/api","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"1ms","timestamp":"2025-07-24T05:33:10.018Z"}
