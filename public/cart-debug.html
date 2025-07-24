@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart Debug Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .test-section { 
+            border: 2px solid #ccc; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 5px; 
+        }
+        .success { border-color: green; background: #f0fff0; }
+        .error { border-color: red; background: #fff0f0; }
+        .cart-test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .cart-test-button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛒 Cart Functionality Debug</h1>
+    
+    <!-- Simple Navigation for Cart Icon -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <h2>Chandan Sarees</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#collections">Collections</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="test-section" id="jsLoadTest">
+        <h3>1. JavaScript Loading Test</h3>
+        <p id="jsStatus">❌ JavaScript not loaded</p>
+    </div>
+
+    <div class="test-section" id="cartApiTest">
+        <h3>2. Cart API Test</h3>
+        <button class="cart-test-button" onclick="testCartAPI()">Test Cart API</button>
+        <div id="cartApiResults"></div>
+    </div>
+
+    <div class="test-section" id="cartUITest">
+        <h3>3. Cart UI Test</h3>
+        <button class="cart-test-button" onclick="testCartUI()">Create Cart UI</button>
+        <button class="cart-test-button" onclick="testToggleCart()">Toggle Cart</button>
+        <button class="cart-test-button" onclick="testAddToCart()">Add Test Item</button>
+        <div id="cartUIResults"></div>
+    </div>
+
+    <div class="test-section" id="consoleTest">
+        <h3>4. Console Errors</h3>
+        <p>Check browser console (F12) for any JavaScript errors.</p>
+        <button class="cart-test-button" onclick="logDebugInfo()">Log Debug Info</button>
+        <div id="debugResults"></div>
+    </div>
+
+    <div class="test-section" id="eventTest">
+        <h3>5. Event Handlers Test</h3>
+        <button class="cart-test-button" onclick="testEvents()">Test Event Handlers</button>
+        <div id="eventResults"></div>
+    </div>
+
+    <!-- Load the main script -->
+    <script src="script.js"></script>
+    
+    <!-- Debug functions -->
+    <script>
+        // Check if main script loaded
+        setTimeout(() => {
+            const jsStatus = document.getElementById('jsStatus');
+            if (typeof ChandanAPI !== 'undefined') {
+                jsStatus.innerHTML = '✅ JavaScript loaded successfully';
+                jsStatus.style.color = 'green';
+                document.getElementById('jsLoadTest').className = 'test-section success';
+            } else {
+                jsStatus.innerHTML = '❌ JavaScript failed to load (ChandanAPI not found)';
+                jsStatus.style.color = 'red';
+                document.getElementById('jsLoadTest').className = 'test-section error';
+            }
+        }, 1000);
+
+        // Test Cart API
+        async function testCartAPI() {
+            const resultsDiv = document.getElementById('cartApiResults');
+            try {
+                if (typeof ChandanAPI === 'undefined') {
+                    throw new Error('ChandanAPI not loaded');
+                }
+                
+                const cart = await ChandanAPI.getCart('test_user');
+                resultsDiv.innerHTML = '<p class="success">✅ Cart API working. Cart items: ' + cart.items.length + '</p>';
+            } catch (error) {
+                resultsDiv.innerHTML = '<p class="error">❌ Cart API error: ' + error.message + '</p>';
+            }
+        }
+
+        // Test Cart UI Creation
+        function testCartUI() {
+            const resultsDiv = document.getElementById('cartUIResults');
+            try {
+                // Try to create cart UI
+                updateCartUI();
+                
+                const cartButton = document.querySelector('.cart-button');
+                if (cartButton) {
+                    resultsDiv.innerHTML += '<p class="success">✅ Cart UI created successfully</p>';
+                } else {
+                    resultsDiv.innerHTML += '<p class="error">❌ Cart UI not created</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += '<p class="error">❌ Cart UI error: ' + error.message + '</p>';
+            }
+        }
+
+        // Test Cart Toggle
+        function testToggleCart() {
+            const resultsDiv = document.getElementById('cartUIResults');
+            try {
+                if (typeof toggleCartDropdown === 'function') {
+                    toggleCartDropdown();
+                    resultsDiv.innerHTML += '<p class="success">✅ Cart toggle function called</p>';
+                } else {
+                    resultsDiv.innerHTML += '<p class="error">❌ toggleCartDropdown function not found</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += '<p class="error">❌ Cart toggle error: ' + error.message + '</p>';
+            }
+        }
+
+        // Test Add to Cart
+        async function testAddToCart() {
+            const resultsDiv = document.getElementById('cartUIResults');
+            try {
+                if (typeof addToCart === 'function') {
+                    await addToCart('1', 1); // Add product ID 1
+                    resultsDiv.innerHTML += '<p class="success">✅ Add to cart function called</p>';
+                } else {
+                    resultsDiv.innerHTML += '<p class="error">❌ addToCart function not found</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += '<p class="error">❌ Add to cart error: ' + error.message + '</p>';
+            }
+        }
+
+        // Log debug info
+        function logDebugInfo() {
+            const debugResults = document.getElementById('debugResults');
+            const info = {
+                url: window.location.href,
+                protocol: window.location.protocol,
+                host: window.location.host,
+                currentUser: typeof currentUser !== 'undefined' ? currentUser : 'undefined',
+                currentCart: typeof currentCart !== 'undefined' ? currentCart : 'undefined',
+                ChandanAPI: typeof ChandanAPI !== 'undefined' ? 'loaded' : 'not loaded',
+                functions: {
+                    updateCartUI: typeof updateCartUI !== 'undefined',
+                    toggleCartDropdown: typeof toggleCartDropdown !== 'undefined',
+                    addToCart: typeof addToCart !== 'undefined'
+                }
+            };
+            
+            console.log('Cart Debug Info:', info);
+            debugResults.innerHTML = '<pre>' + JSON.stringify(info, null, 2) + '</pre>';
+        }
+
+        // Test event handlers
+        function testEvents() {
+            const resultsDiv = document.getElementById('eventResults');
+            
+            // Check if cart button exists and has onclick
+            const cartButton = document.querySelector('.cart-button');
+            if (cartButton) {
+                const hasOnclick = cartButton.hasAttribute('onclick');
+                const onclickValue = cartButton.getAttribute('onclick');
+                
+                resultsDiv.innerHTML = `
+                    <p>Cart button found: ✅</p>
+                    <p>Has onclick: ${hasOnclick ? '✅' : '❌'}</p>
+                    <p>Onclick value: ${onclickValue || 'none'}</p>
+                `;
+                
+                // Test manual click
+                try {
+                    cartButton.click();
+                    resultsDiv.innerHTML += '<p class="success">✅ Manual click test successful</p>';
+                } catch (error) {
+                    resultsDiv.innerHTML += '<p class="error">❌ Manual click error: ' + error.message + '</p>';
+                }
+            } else {
+                resultsDiv.innerHTML = '<p class="error">❌ Cart button not found</p>';
+            }
+        }
+
+        // Initialize cart on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (typeof loadCart === 'function') {
+                    loadCart();
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
