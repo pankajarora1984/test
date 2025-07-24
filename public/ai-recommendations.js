@@ -1,3 +1,27 @@
+// Simple logger for frontend (fallback if not available)
+if (typeof logger === 'undefined') {
+    window.logger = {
+        api: function(message, method, status, duration, data, error) {
+            console.log(`[API] ${message}`, {
+                method: method || 'GET',
+                status: status || 200,
+                duration: duration || 0,
+                data: data || {},
+                error: error || null
+            });
+        },
+        info: function(message, data) {
+            console.log(`[INFO] ${message}`, data || {});
+        },
+        error: function(message, data) {
+            console.error(`[ERROR] ${message}`, data || {});
+        },
+        warn: function(message, data) {
+            console.warn(`[WARN] ${message}`, data || {});
+        }
+    };
+}
+
 // AI Recommendation System Frontend
 class AIRecommendations {
     constructor() {
@@ -28,16 +52,24 @@ class AIRecommendations {
             
             if (data.success) {
                 this.recommendations = data.recommendations || [];
-                logger.api('AI recommendations received', 'GET', 200, 0, { 
-                    count: this.recommendations.length, 
-                    provider: data.provider 
-                });
+                try {
+                    logger.api('AI recommendations received', 'GET', 200, 0, { 
+                        count: this.recommendations.length, 
+                        provider: data.provider 
+                    });
+                } catch (logError) {
+                    console.log('[AI] Recommendations received:', this.recommendations.length, 'items');
+                }
                 return data;
             } else {
                 throw new Error(data.message || 'Failed to get recommendations');
             }
         } catch (error) {
-            logger.api('AI recommendations failed', 'GET', 500, 0, {}, error.message);
+            try {
+                logger.api('AI recommendations failed', 'GET', 500, 0, {}, error.message);
+            } catch (logError) {
+                console.error('[AI] Recommendations failed:', error.message);
+            }
             console.error('AI Recommendations Error:', error);
             return { success: false, recommendations: [], error: error.message };
         } finally {
@@ -85,19 +117,24 @@ class AIRecommendations {
 
     // Show AI recommendation modal
     async showRecommendationModal(preferences = {}, context = 'general') {
-        // Show loading indicator
-        this.showLoadingModal();
-
         try {
+            console.log('🤖 Opening AI recommendation modal...', { preferences, context });
+            
+            // Show loading indicator
+            this.showLoadingModal();
+
             const result = await this.getRecommendations(preferences, null, context);
             
             if (result.success && result.recommendations.length > 0) {
+                console.log('✅ Got recommendations, showing modal:', result.recommendations.length);
                 this.displayRecommendationModal(result);
             } else {
+                console.log('⚠️ No recommendations found');
                 this.showNoRecommendationsModal();
             }
         } catch (error) {
-            this.showErrorModal(error.message);
+            console.error('❌ Error in showRecommendationModal:', error);
+            this.showErrorModal(error.message || 'Unknown error occurred');
         }
     }
 
@@ -799,8 +836,32 @@ class AIRecommendations {
     }
 }
 
+// Ensure required globals exist
+if (typeof currentUser === 'undefined') {
+    window.currentUser = { id: 'guest_' + Date.now() };
+}
+
+if (typeof products === 'undefined') {
+    window.products = [];
+}
+
+// Safe logger check
+function safeLog(message, data) {
+    try {
+        if (typeof logger !== 'undefined' && logger.info) {
+            logger.info(message, data);
+        } else {
+            console.log(`[AI] ${message}`, data || '');
+        }
+    } catch (e) {
+        console.log(`[AI] ${message}`, data || '');
+    }
+}
+
 // Initialize AI recommendations
 const aiRecommendations = new AIRecommendations();
+
+safeLog('AI Recommendations System Initializing...');
 
 // Add event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -855,16 +916,35 @@ document.addEventListener('DOMContentLoaded', () => {
          // Handle view product button in recommendations
          if (e.target.classList.contains('view-product-btn')) {
              const productId = e.target.getAttribute('data-product-id');
-             await aiRecommendations.trackInteraction('click', productId);
-             viewProductDetails(productId);
+             try {
+                 await aiRecommendations.trackInteraction('click', productId);
+                 if (typeof viewProductDetails === 'function') {
+                     viewProductDetails(productId);
+                 } else {
+                     console.log('View product function not available, productId:', productId);
+                     alert('Product details not available yet');
+                 }
+             } catch (e) {
+                 console.error('Failed to view product:', e);
+             }
          }
 
-        // Handle add to cart button in recommendations
-        if (e.target.classList.contains('add-to-cart-btn')) {
-            const productId = e.target.getAttribute('data-product-id');
-            await aiRecommendations.trackInteraction('add_to_cart', productId);
-            await addToCart(productId);
-        }
+                 // Handle add to cart button in recommendations
+         if (e.target.classList.contains('add-to-cart-btn')) {
+             const productId = e.target.getAttribute('data-product-id');
+             try {
+                 await aiRecommendations.trackInteraction('add_to_cart', productId);
+                 if (typeof addToCart === 'function') {
+                     await addToCart(productId);
+                 } else {
+                     console.log('Add to cart function not available, productId:', productId);
+                     alert('Product will be added to cart (function not loaded yet)');
+                 }
+             } catch (e) {
+                 console.error('Failed to add to cart:', e);
+                 alert('Failed to add product to cart');
+             }
+         }
 
         // Handle get new recommendations button
         if (e.target.classList.contains('get-new-recommendations')) {
@@ -910,28 +990,50 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Integrate with existing product view function
-const originalViewProductDetails = window.viewProductDetails;
-window.viewProductDetails = async function(productId) {
-    // Track product view
-    await aiRecommendations.trackInteraction('view', productId);
-    
-    // Call original function
-    if (originalViewProductDetails) {
-        originalViewProductDetails(productId);
-    }
-    
-    // Show related recommendations after a delay
-    setTimeout(async () => {
-        const product = products.find(p => p.id === productId);
-        if (product) {
-            const recommendations = await aiRecommendations.getRecommendations({}, product, 'product-view');
-            if (recommendations.success && recommendations.recommendations.length > 0) {
-                // Add recommendations section to product modal
-                addRecommendationsToProductModal(recommendations.recommendations);
-            }
+function setupProductViewIntegration() {
+    const originalViewProductDetails = window.viewProductDetails;
+    window.viewProductDetails = async function(productId) {
+        // Track product view
+        try {
+            await aiRecommendations.trackInteraction('view', productId);
+        } catch (e) {
+            console.warn('Failed to track product view:', e);
         }
-    }, 1000);
-};
+        
+        // Call original function
+        if (originalViewProductDetails) {
+            originalViewProductDetails(productId);
+        }
+        
+        // Show related recommendations after a delay
+        setTimeout(async () => {
+            try {
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    const recommendations = await aiRecommendations.getRecommendations({}, product, 'product-view');
+                    if (recommendations.success && recommendations.recommendations.length > 0) {
+                        // Add recommendations section to product modal
+                        addRecommendationsToProductModal(recommendations.recommendations);
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to show product recommendations:', e);
+            }
+        }, 1000);
+    };
+}
+
+// Setup integration when ready
+if (typeof window.viewProductDetails === 'function') {
+    setupProductViewIntegration();
+} else {
+    // Wait for the main script to load
+    setTimeout(() => {
+        if (typeof window.viewProductDetails === 'function') {
+            setupProductViewIntegration();
+        }
+    }, 2000);
+}
 
 // Add recommendations to product modal
 function addRecommendationsToProductModal(recommendations) {
