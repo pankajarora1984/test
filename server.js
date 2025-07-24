@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 // Import enhanced logging
@@ -142,12 +143,42 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        version: require('./package.json').version,
+        version: '1.0.0',
         environment: process.env.NODE_ENV || 'development'
     };
     
     logger.debug('🏥 Health check requested', healthData);
-    res.status(200).json(healthData);
+    res.json(healthData);
+});
+
+// Debug endpoint to help diagnose issues
+app.get('/debug', (req, res) => {
+    const debugInfo = {
+        timestamp: new Date().toISOString(),
+        request: {
+            ip: req.ip,
+            ips: req.ips,
+            method: req.method,
+            url: req.url,
+            headers: req.headers,
+            userAgent: req.get('User-Agent')
+        },
+        server: {
+            port: PORT,
+            environment: process.env.NODE_ENV || 'development',
+            uptime: process.uptime(),
+            cwd: process.cwd(),
+            staticPath: path.join(__dirname, 'public')
+        },
+        files: {
+            stylesExists: fs.existsSync(path.join(__dirname, 'public', 'styles.css')),
+            scriptExists: fs.existsSync(path.join(__dirname, 'public', 'script.js')),
+            indexExists: fs.existsSync(path.join(__dirname, 'public', 'index.html'))
+        }
+    };
+    
+    logger.info('🔍 Debug info requested', debugInfo);
+    res.json(debugInfo);
 });
 
 // Serve frontend for all other routes (SPA support)

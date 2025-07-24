@@ -97,3 +97,20 @@
 [2025-07-24T05:38:34.139Z] [INFO] 🎉 Chandan Sarees E-commerce Server Started Successfully {"port":"3000","environment":"development","logLevel":"DEBUG","urls":{"api":"http://localhost:3000/api","website":"http://localhost:3000","health":"http://localhost:3000/health"}}
 [2025-07-24T05:38:46.653Z] [INFO] HTTP HEAD /styles.css {"method":"HEAD","url":"/styles.css","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"3ms","timestamp":"2025-07-24T05:38:46.653Z"}
 [2025-07-24T05:39:03.844Z] [INFO] HTTP GET / {"method":"GET","url":"/","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"2ms","timestamp":"2025-07-24T05:39:03.844Z"}
+[2025-07-24T05:43:47.128Z] [INFO] HTTP HEAD /test.html {"method":"HEAD","url":"/test.html","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"0ms","timestamp":"2025-07-24T05:43:47.128Z"}
+[2025-07-24T05:43:51.853Z] [INFO] HTTP GET /styles.css {"method":"GET","url":"/styles.css","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"1ms","timestamp":"2025-07-24T05:43:51.853Z"}
+[2025-07-24T05:43:57.049Z] [INFO] HTTP GET /script.js {"method":"GET","url":"/script.js","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"2ms","timestamp":"2025-07-24T05:43:57.049Z"}
+[2025-07-24T05:45:38.637Z] [INFO] 🛑 SIGTERM received, shutting down gracefully
+[2025-07-24T05:45:38.637Z] [INFO] ✅ Server closed successfully
+[2025-07-24T05:45:44.441Z] [INFO] 🚀 Starting Chandan Sarees E-commerce Server {"port":"3000","nodeEnv":"development","logLevel":"DEBUG"}
+[2025-07-24T05:45:44.442Z] [DEBUG] ✅ Helmet security middleware enabled with relaxed CSP
+[2025-07-24T05:45:44.442Z] [DEBUG] ✅ CORS middleware enabled
+[2025-07-24T05:45:44.443Z] [DEBUG] ✅ Enhanced request logging enabled
+[2025-07-24T05:45:44.443Z] [DEBUG] ✅ Body parser middleware enabled
+[2025-07-24T05:45:44.443Z] [DEBUG] ✅ Static file serving enabled for /public with explicit MIME types
+[2025-07-24T05:45:44.443Z] [DEBUG] 📁 Loading route modules...
+[2025-07-24T05:45:44.472Z] [DEBUG] ✅ All route modules loaded successfully
+[2025-07-24T05:45:44.472Z] [INFO] 🛣️  API routes registered successfully {"routes":["/api/products","/api/categories","/api/contact","/api/cart","/api/orders"]}
+[2025-07-24T05:45:44.478Z] [INFO] 🎉 Chandan Sarees E-commerce Server Started Successfully {"port":"3000","environment":"development","logLevel":"DEBUG","urls":{"api":"http://localhost:3000/api","website":"http://localhost:3000","health":"http://localhost:3000/health"}}
+[2025-07-24T05:45:52.268Z] [INFO] 🔍 Debug info requested {"timestamp":"2025-07-24T05:45:52.268Z","request":{"ip":"127.0.0.1","ips":[],"method":"GET","url":"/debug","headers":{"host":"localhost:3000","user-agent":"curl/8.12.1","accept":"*/*"},"userAgent":"curl/8.12.1"},"server":{"port":"3000","environment":"development","uptime":7.890169955,"cwd":"/workspace","staticPath":"/workspace/public"},"files":{"stylesExists":true,"scriptExists":true,"indexExists":true}}
+[2025-07-24T05:45:52.270Z] [INFO] HTTP GET /debug {"method":"GET","url":"/debug","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"4ms","timestamp":"2025-07-24T05:45:52.270Z"}
