@@ -55,33 +55,34 @@
 
     <div class="test-section" id="cartApiTest">
         <h3>2. Cart API Test</h3>
-        <button class="cart-test-button" onclick="testCartAPI()">Test Cart API</button>
+        <button class="cart-test-button" id="testCartAPIBtn">Test Cart API</button>
         <div id="cartApiResults"></div>
     </div>
 
     <div class="test-section" id="cartUITest">
         <h3>3. Cart UI Test</h3>
-        <button class="cart-test-button" onclick="testCartUI()">Create Cart UI</button>
-        <button class="cart-test-button" onclick="testToggleCart()">Toggle Cart</button>
-        <button class="cart-test-button" onclick="testAddToCart()">Add Test Item</button>
+        <button class="cart-test-button" id="testCartUIBtn">Create Cart UI</button>
+        <button class="cart-test-button" id="testToggleCartBtn">Toggle Cart</button>
+        <button class="cart-test-button" id="testAddToCartBtn">Add Test Item</button>
         <div id="cartUIResults"></div>
     </div>
 
     <div class="test-section" id="consoleTest">
         <h3>4. Console Errors</h3>
         <p>Check browser console (F12) for any JavaScript errors.</p>
-        <button class="cart-test-button" onclick="logDebugInfo()">Log Debug Info</button>
+        <button class="cart-test-button" id="logDebugInfoBtn">Log Debug Info</button>
         <div id="debugResults"></div>
     </div>
 
     <div class="test-section" id="eventTest">
         <h3>5. Event Handlers Test</h3>
-        <button class="cart-test-button" onclick="testEvents()">Test Event Handlers</button>
+        <button class="cart-test-button" id="testEventsBtn">Test Event Handlers</button>
         <div id="eventResults"></div>
     </div>
 
     <!-- Load the main script -->
     <script src="script.js"></script>
+    <script src="fix-cart-events.js"></script>
     
     <!-- Debug functions -->
     <script>
@@ -211,8 +212,17 @@
             }
         }
 
-        // Initialize cart on page load
+        // Add event listeners after DOM loads
         window.addEventListener('DOMContentLoaded', () => {
+            // Add event listeners to buttons
+            document.getElementById('testCartAPIBtn')?.addEventListener('click', testCartAPI);
+            document.getElementById('testCartUIBtn')?.addEventListener('click', testCartUI);
+            document.getElementById('testToggleCartBtn')?.addEventListener('click', testToggleCart);
+            document.getElementById('testAddToCartBtn')?.addEventListener('click', testAddToCart);
+            document.getElementById('logDebugInfoBtn')?.addEventListener('click', logDebugInfo);
+            document.getElementById('testEventsBtn')?.addEventListener('click', testEvents);
+            
+            // Initialize cart
             setTimeout(() => {
                 if (typeof loadCart === 'function') {
                     loadCart();

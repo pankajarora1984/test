@@ -583,7 +583,7 @@ function updateCartCount(count) {
         // Create cart icon and count in navigation
         const cartHTML = `
             <div class="cart-container">
-                <button class="cart-button" onclick="toggleCartDropdown()">
+                <button class="cart-button" id="cartToggleBtn">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count">${count}</span>
                 </button>
@@ -594,6 +594,12 @@ function updateCartCount(count) {
         if (navMenu) {
             navMenu.insertAdjacentHTML('afterend', cartHTML);
             cartCountElement = document.querySelector('.cart-count');
+            
+            // Add event listener to cart button
+            const cartButton = document.querySelector('.cart-button');
+            if (cartButton) {
+                cartButton.addEventListener('click', toggleCartDropdown);
+            }
         }
     }
     
@@ -624,7 +630,7 @@ function createCartDropdown() {
         <div class="cart-dropdown">
             <div class="cart-header">
                 <h3>Shopping Cart</h3>
-                <button class="close-cart" onclick="toggleCartDropdown()">×</button>
+                <button class="close-cart" id="closeCartBtn">×</button>
             </div>
             <div class="cart-items"></div>
             <div class="cart-footer">
@@ -632,14 +638,30 @@ function createCartDropdown() {
                     <strong>Total: ₹<span class="total-amount">0</span></strong>
                 </div>
                 <div class="cart-actions">
-                    <button class="btn-secondary" onclick="viewCart()">View Cart</button>
-                    <button class="btn-primary" onclick="proceedToCheckout()">Checkout</button>
+                    <button class="btn-secondary" id="viewCartBtn">View Cart</button>
+                    <button class="btn-primary" id="checkoutBtn">Checkout</button>
                 </div>
             </div>
         </div>
     `;
     
     cartContainer.insertAdjacentHTML('beforeend', cartDropdownHTML);
+    
+    // Add event listeners to dropdown buttons
+    const closeCartBtn = document.querySelector('.close-cart');
+    const viewCartBtn = document.querySelector('#viewCartBtn');
+    const checkoutBtn = document.querySelector('#checkoutBtn');
+    
+    if (closeCartBtn) {
+        closeCartBtn.addEventListener('click', toggleCartDropdown);
+    }
+    if (viewCartBtn) {
+        viewCartBtn.addEventListener('click', viewCart);
+    }
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', proceedToCheckout);
+    }
+    
     updateCartDropdown();
 }
 
@@ -661,12 +683,12 @@ function updateCartDropdown() {
                     <p>₹${item.price.toLocaleString('en-IN')}</p>
                     <p>Size: ${item.selectedSize}, Color: ${item.selectedColor}</p>
                     <div class="quantity-controls">
-                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity - 1})">-</button>
-                        <span>${item.quantity}</span>
-                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                        <button class="qty-decrease">-</button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="qty-increase">+</button>
                     </div>
                 </div>
-                <button class="remove-item" onclick="removeFromCart('${item.id}')">×</button>
+                <button class="remove-item">×</button>
             </div>
         `).join('');
         cartItemsContainer.innerHTML = cartItemsHTML;
@@ -764,14 +786,14 @@ function renderCartItems() {
                         <p class="cart-item-price">₹${item.price.toLocaleString('en-IN')}</p>
                         <p class="cart-item-options">Size: ${item.selectedSize} | Color: ${item.selectedColor}</p>
                         <div class="quantity-controls">
-                            <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity - 1})">-</button>
-                            <input type="number" value="${item.quantity}" min="1" onchange="updateCartItemQuantity('${item.id}', this.value)">
-                            <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                            <button class="qty-decrease">-</button>
+                            <input type="number" class="quantity-input" value="${item.quantity}" min="1" data-item-id="${item.id}">
+                            <button class="qty-increase">+</button>
                         </div>
                     </div>
                     <div class="cart-item-total">
                         <p>₹${(item.price * item.quantity).toLocaleString('en-IN')}</p>
-                        <button class="remove-item" onclick="removeFromCart('${item.id}')">Remove</button>
+                        <button class="remove-item">Remove</button>
                     </div>
                 </div>
             `).join('')}
@@ -812,11 +834,11 @@ function renderCartSummary() {
             </div>
             <div class="coupon-section">
                 <input type="text" id="couponCode" placeholder="Enter coupon code">
-                <button onclick="applyCoupon()">Apply</button>
+                <button class="apply-coupon-btn">Apply</button>
             </div>
             <div class="cart-actions">
-                <button class="btn-secondary" onclick="clearCart()">Clear Cart</button>
-                <button class="btn-primary" onclick="proceedToCheckout()">Proceed to Checkout</button>
+                <button class="btn-secondary clear-cart-btn">Clear Cart</button>
+                <button class="btn-primary proceed-checkout-btn">Proceed to Checkout</button>
             </div>
         </div>
     `;
