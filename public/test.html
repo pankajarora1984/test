@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS/JS Test Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-indicator {
+            background: red;
+            color: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 5px;
+        }
+        .css-loaded {
+            background: green !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-indicator" id="cssTest">
+        ❌ CSS NOT LOADED - If this is red, CSS is not working
+    </div>
+    
+    <div class="test-indicator" id="jsTest">
+        ❌ JavaScript NOT LOADED - This will turn green when JS loads
+    </div>
+    
+    <div style="margin: 20px;">
+        <h2>Direct File Tests:</h2>
+        <p><a href="/styles.css" target="_blank">Test styles.css</a> - Should show CSS content</p>
+        <p><a href="/script.js" target="_blank">Test script.js</a> - Should show JavaScript content</p>
+        <p><a href="/" target="_blank">Back to main site</a></p>
+    </div>
+
+    <div style="margin: 20px;">
+        <h2>Network Tab Instructions:</h2>
+        <ol>
+            <li>Open browser Developer Tools (F12)</li>
+            <li>Go to Network tab</li>
+            <li>Refresh this page</li>
+            <li>Check if styles.css and script.js show 200 status</li>
+            <li>If they show 404, the files aren't being served</li>
+            <li>If they show other errors, check the Response tab</li>
+        </ol>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Test if our script.js loaded (it has ChandanAPI class)
+        if (typeof ChandanAPI !== 'undefined') {
+            document.getElementById('jsTest').innerHTML = '✅ SCRIPT.JS LOADED - Custom JavaScript is working';
+            document.getElementById('jsTest').className = 'test-indicator css-loaded';
+        }
+        
+        // Test if CSS loaded by checking if a CSS class applies
+        setTimeout(() => {
+            const testElement = document.querySelector('.navbar');
+            if (testElement) {
+                const styles = window.getComputedStyle(testElement);
+                if (styles.display !== '') {
+                    document.getElementById('cssTest').innerHTML = '✅ STYLES.CSS LOADED - CSS is working';
+                    document.getElementById('cssTest').className = 'test-indicator css-loaded';
+                }
+            }
+        }, 100);
+    </script>
+</body>
+</html>
