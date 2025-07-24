@@ -76,6 +76,7 @@ const categoriesRouter = require('./routes/categories');
 const contactRouter = require('./routes/contact');
 const cartRouter = require('./routes/cart');
 const ordersRouter = require('./routes/orders');
+const recommendationsRouter = require('./routes/recommendations');
 logger.debug('✅ All route modules loaded successfully');
 
 // API Routes
@@ -84,8 +85,9 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/recommendations', recommendationsRouter);
 logger.info('🛣️  API routes registered successfully', {
-    routes: ['/api/products', '/api/categories', '/api/contact', '/api/cart', '/api/orders']
+    routes: ['/api/products', '/api/categories', '/api/contact', '/api/cart', '/api/orders', '/api/recommendations']
 });
 
 // API documentation endpoint
@@ -93,7 +95,7 @@ app.get('/api', (req, res) => {
     res.json({
         message: 'Chandan Sarees E-commerce API',
         version: '2.0.0',
-        features: ['Products', 'Categories', 'Shopping Cart', 'Orders', 'Payment Integration', 'Contact'],
+        features: ['Products', 'Categories', 'Shopping Cart', 'Orders', 'Payment Integration', 'Contact', 'AI Recommendations'],
         endpoints: {
             products: {
                 'GET /api/products': 'Get all products (with filtering, sorting, pagination)',
@@ -133,6 +135,13 @@ app.get('/api', (req, res) => {
                 'POST /api/contact': 'Submit contact form',
                 'GET /api/contact/info': 'Get business contact information',
                 'POST /api/contact/newsletter': 'Newsletter subscription'
+            },
+            recommendations: {
+                'POST /api/recommendations/suggest': 'Get AI-powered product recommendations',
+                'POST /api/recommendations/track': 'Track user interactions for better recommendations',
+                'GET /api/recommendations/preferences/:userId': 'Get user preferences',
+                'PUT /api/recommendations/preferences/:userId': 'Update user preferences',
+                'GET /api/recommendations/stats/:userId': 'Get recommendation statistics and analytics'
             }
         },
         paymentGateway: 'Razorpay',
