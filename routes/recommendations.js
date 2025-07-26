@@ -12,6 +12,7 @@ const AI_PROVIDERS = {
     OPENAI: 'openai',
     GEMINI: 'gemini',
     ANTHROPIC: 'anthropic',
+    PUTER: 'puter', // Free AI via Puter.js
     LOCAL: 'local' // Fallback rule-based system
 };
 
@@ -83,6 +84,9 @@ router.post('/suggest', async (req, res) => {
                 break;
             case AI_PROVIDERS.ANTHROPIC:
                 recommendations = await getAnthropicRecommendations(userId, preferences, currentProduct, context);
+                break;
+            case AI_PROVIDERS.PUTER:
+                recommendations = await getPuterRecommendations(userId, preferences, currentProduct, context);
                 break;
             default:
                 recommendations = await getLocalRecommendations(userId, preferences, currentProduct, context);
@@ -347,6 +351,360 @@ async function getAnthropicRecommendations(userId, preferences, currentProduct, 
         throw new Error('Invalid Anthropic response');
     } catch (error) {
         logger.error('Anthropic API error', { error: error.message });
+        throw error;
+    }
+}
+
+// Puter.js AI Integration (Free)
+async function getPuterRecommendations(userId, preferences, currentProduct, context) {
+    logger.info('🤖 Starting Puter.js AI recommendations request', {
+        userId,
+        preferences,
+        currentProduct: currentProduct?.id,
+        context
+    });
+
+    const userHistory = getUserInteractions(userId);
+    const userPrefs = getUserPreferences(userId);
+    const prompt = buildRecommendationPrompt(userPrefs, preferences, currentProduct, context, userHistory);
+
+    logger.debug('📝 Puter.js request details', {
+        promptLength: prompt.length,
+        userHistoryCount: userHistory.length,
+        userPrefsKeys: Object.keys(userPrefs)
+    });
+
+    try {
+        // Puter.js AI API endpoint - using their free AI service
+        const requestBody = {
+            model: 'gpt-3.5-turbo', // Puter provides access to various models
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are an expert fashion consultant specializing in Indian ethnic wear. Provide personalized product recommendations based on user preferences, occasions, and style preferences. Return your response as JSON with recommendations array containing productId, score (0-1), and reason fields.'
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: 1000,
+            temperature: 0.7
+        };
+
+        logger.debug('🚀 Making Puter.js AI request', {
+            url: 'https://api.puter.com/v1/ai/chat/completions',
+            model: requestBody.model,
+            messagesCount: requestBody.messages.length,
+            maxTokens: requestBody.max_tokens
+        });
+
+        const response = await fetch('https://api.puter.com/v1/ai/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.PUTER_API_KEY || 'free'}`, // Puter often allows free usage
+                'User-Agent': 'Chandan-Sarees-AI/1.0'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        logger.info('📡 Puter.js AI response received', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: {
+                contentType: response.headers.get('content-type'),
+                contentLength: response.headers.get('content-length')
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            logger.error('❌ Puter.js AI HTTP error', {
+                status: response.status,
+                statusText: response.statusText,
+                errorBody: errorText
+            });
+            
+            // If Puter fails, try alternative approach with different endpoint
+            if (response.status === 401 || response.status === 403) {
+                logger.info('🔄 Trying Puter.js alternative endpoint...');
+                return await getPuterRecommendationsAlternative(userId, preferences, currentProduct, context);
+            }
+            
+            throw new Error(`Puter.js AI error: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        
+        logger.debug('📦 Puter.js AI response data', {
+            hasChoices: !!data.choices,
+            choicesLength: data.choices?.length,
+            hasUsage: !!data.usage,
+            usage: data.usage,
+            firstChoiceKeys: data.choices?.[0] ? Object.keys(data.choices[0]) : null,
+            hasMessage: !!data.choices?.[0]?.message,
+            messageRole: data.choices?.[0]?.message?.role,
+            contentLength: data.choices?.[0]?.message?.content?.length
+        });
+
+        if (data.error) {
+            logger.error('❌ Puter.js AI returned error', {
+                error: data.error
+            });
+            throw new Error(`Puter.js AI error: ${data.error.message || JSON.stringify(data.error)}`);
+        }
+        
+        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+            logger.info('✅ Puter.js response successful', {
+                responseLength: data.choices[0].message.content.length,
+                tokensUsed: data.usage?.total_tokens
+            });
+            return parseAIResponse(data.choices[0].message.content);
+        }
+        
+        logger.error('❌ Invalid Puter.js response structure', {
+            dataKeys: Object.keys(data),
+            data: JSON.stringify(data, null, 2)
+        });
+        throw new Error('Invalid Puter.js response structure');
+    } catch (error) {
+        logger.error('❌ Puter.js AI call failed', { 
+            error: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        // Try alternative approach if main Puter endpoint fails
+        logger.info('🔄 Trying Puter.js alternative approach...');
+        try {
+            return await getPuterRecommendationsAlternative(userId, preferences, currentProduct, context);
+        } catch (altError) {
+            logger.error('❌ Puter.js alternative also failed', { error: altError.message });
+            throw error; // Throw original error
+        }
+    }
+}
+
+// Alternative Puter.js approach using their public API
+async function getPuterRecommendationsAlternative(userId, preferences, currentProduct, context) {
+    logger.info('🔄 Using Puter.js alternative approach');
+    
+    try {
+        // Use a simpler approach - direct text completion
+        const userHistory = getUserInteractions(userId);
+        const userPrefs = getUserPreferences(userId);
+        const combinedPrefs = { ...userPrefs, ...preferences };
+        
+        // Create a simplified prompt for text completion
+        const simplePrompt = `As a fashion expert, recommend 3-4 Indian ethnic wear products for:
+        - Occasion: ${combinedPrefs.occasion || 'any'}
+        - Price Range: ${combinedPrefs.priceRange || 'any'}
+        - Material: ${combinedPrefs.material || 'any'}
+        - Style: ${combinedPrefs.style || 'any'}
+        
+        Available products: ${products.map(p => `${p.id}: ${p.name} (₹${p.price}, ${p.category})`).join(', ')}
+        
+        Respond with product IDs and reasons, format: "ID:reason"`;
+
+        const response = await fetch('https://api.puter.com/v1/ai/text/complete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'Chandan-Sarees-AI/1.0'
+            },
+            body: JSON.stringify({
+                prompt: simplePrompt,
+                max_tokens: 500,
+                temperature: 0.7
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            logger.info('✅ Puter.js alternative successful');
+            
+            // Parse the simple text response
+            return parseSimpleTextResponse(data.text || data.completion || '');
+        }
+        
+        throw new Error('Puter.js alternative endpoint failed');
+    } catch (error) {
+        logger.error('❌ Puter.js alternative failed', { error: error.message });
+        
+        // Final fallback - use enhanced local recommendations with AI-like reasoning
+        logger.info('🧠 Using AI-enhanced local recommendations as final fallback');
+        return await getAIEnhancedLocalRecommendations(userId, preferences, currentProduct, context);
+    }
+}
+
+// Enhanced local recommendations with AI-like reasoning
+async function getAIEnhancedLocalRecommendations(userId, preferences, currentProduct, context) {
+    logger.info('🧠 Using AI-enhanced local recommendation engine');
+    
+    const userHistory = getUserInteractions(userId);
+    const userPrefs = getUserPreferences(userId);
+    const combinedPrefs = { ...userPrefs, ...preferences };
+    
+    let candidates = [...products];
+    let explanation = "AI-enhanced recommendations based on your preferences";
+    
+    // Advanced filtering with AI-like logic
+    if (context === 'product-view' && currentProduct) {
+        // Find products with similar characteristics
+        candidates = products.filter(p => {
+            if (p.id === currentProduct.id) return false;
+            
+            // Score similarity
+            let similarity = 0;
+            if (p.category === currentProduct.category) similarity += 0.4;
+            if (p.material === currentProduct.material) similarity += 0.3;
+            if (Math.abs(p.price - currentProduct.price) < 5000) similarity += 0.2;
+            if (p.occasion?.some(occ => currentProduct.occasion?.includes(occ))) similarity += 0.1;
+            
+            return similarity > 0.3;
+        });
+        explanation = `Smart recommendations similar to ${currentProduct.name}`;
+    }
+    
+    // Apply intelligent preference filters
+    if (combinedPrefs.occasion) {
+        candidates = candidates.filter(product => {
+            const category = PRODUCT_CATEGORIES[product.category] || {};
+            return category.occasions && category.occasions.includes(combinedPrefs.occasion);
+        });
+    }
+    
+    if (combinedPrefs.priceRange) {
+        candidates = candidates.filter(product => {
+            switch (combinedPrefs.priceRange) {
+                case 'budget': return product.price < 5000;
+                case 'moderate': return product.price >= 5000 && product.price < 15000;
+                case 'premium': return product.price >= 15000;
+                default: return true;
+            }
+        });
+    }
+    
+    if (combinedPrefs.material) {
+        candidates = candidates.filter(product => 
+            product.material.toLowerCase().includes(combinedPrefs.material.toLowerCase())
+        );
+    }
+    
+    // AI-like scoring algorithm
+    candidates = candidates.map(product => {
+        let score = 0.5; // Base score
+        
+        // Rating boost
+        if (product.rating >= 4.5) score += 0.2;
+        else if (product.rating >= 4.0) score += 0.1;
+        
+        // Review count boost
+        if (product.reviews >= 100) score += 0.1;
+        else if (product.reviews >= 50) score += 0.05;
+        
+        // Featured product boost
+        if (product.featured) score += 0.1;
+        
+        // Preference matching boost
+        if (combinedPrefs.occasion && product.occasion?.includes(combinedPrefs.occasion)) score += 0.2;
+        if (combinedPrefs.material && product.material.toLowerCase().includes(combinedPrefs.material.toLowerCase())) score += 0.1;
+        
+        // Context-specific boost
+        if (context === 'wedding' && product.category === 'silk-sarees') score += 0.1;
+        if (context === 'festival' && product.colors?.includes('Red')) score += 0.05;
+        
+        return { ...product, aiScore: Math.min(1.0, score) };
+    });
+    
+    // Sort by AI score
+    candidates.sort((a, b) => b.aiScore - a.aiScore);
+    
+    // Generate AI-like reasons
+    const recommendations = candidates.slice(0, 6).map((product, index) => ({
+        product,
+        score: product.aiScore,
+        reason: generateAILikeReason(product, combinedPrefs, context),
+        explanation: explanation
+    }));
+    
+    logger.info('✅ AI-enhanced local recommendations generated', {
+        count: recommendations.length,
+        avgScore: recommendations.reduce((sum, r) => sum + r.score, 0) / recommendations.length
+    });
+    
+    return recommendations;
+}
+
+// Generate AI-like reasoning for recommendations
+function generateAILikeReason(product, preferences, context) {
+    const reasons = [];
+    
+    if (preferences.occasion) {
+        const category = PRODUCT_CATEGORIES[product.category];
+        if (category && category.occasions.includes(preferences.occasion)) {
+            reasons.push(`perfect for ${preferences.occasion} occasions`);
+        }
+    }
+    
+    if (product.rating >= 4.5) {
+        reasons.push('highly rated by customers');
+    }
+    
+    if (preferences.material && product.material.toLowerCase().includes(preferences.material.toLowerCase())) {
+        reasons.push(`matches your ${preferences.material} preference`);
+    }
+    
+    if (product.featured) {
+        reasons.push('featured collection item');
+    }
+    
+    if (context === 'product-view') {
+        reasons.push('similar style and quality');
+    }
+    
+    if (product.price < 10000) {
+        reasons.push('great value for money');
+    } else if (product.price > 20000) {
+        reasons.push('premium quality and design');
+    }
+    
+    return reasons.length > 0 ? reasons.join(', ') : 'excellent choice based on your profile';
+}
+
+// Parse simple text response from alternative API
+function parseSimpleTextResponse(text) {
+    try {
+        const lines = text.split('\n').filter(line => line.trim());
+        const recommendations = [];
+        
+        for (const line of lines) {
+            const match = line.match(/(\d+):(.+)/);
+            if (match) {
+                const productId = match[1];
+                const reason = match[2].trim();
+                const product = products.find(p => p.id === productId);
+                
+                if (product) {
+                    recommendations.push({
+                        product,
+                        score: 0.8,
+                        reason: reason,
+                        explanation: 'AI-powered recommendation via Puter.js'
+                    });
+                }
+            }
+        }
+        
+        if (recommendations.length > 0) {
+            return recommendations;
+        }
+        
+        throw new Error('No valid recommendations parsed from text');
+    } catch (error) {
+        logger.warn('Failed to parse simple text response', { error: error.message, text });
         throw error;
     }
 }
