@@ -136,48 +136,134 @@ router.post('/suggest', async (req, res) => {
 
 // OpenAI Integration
 async function getOpenAIRecommendations(userId, preferences, currentProduct, context) {
+    // Enhanced logging for debugging
+    logger.info('🤖 Starting OpenAI recommendations request', {
+        userId,
+        preferences,
+        currentProduct: currentProduct?.id,
+        context,
+        hasApiKey: !!process.env.OPENAI_API_KEY,
+        apiKeyLength: process.env.OPENAI_API_KEY?.length,
+        apiKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10) + '...'
+    });
+
     if (!process.env.OPENAI_API_KEY) {
+        logger.error('❌ OpenAI API key not configured');
         throw new Error('OpenAI API key not configured');
+    }
+
+    // Validate API key format
+    const apiKey = process.env.OPENAI_API_KEY.trim();
+    if (!apiKey.startsWith('sk-')) {
+        logger.error('❌ Invalid OpenAI API key format', {
+            keyStart: apiKey.substring(0, 10),
+            keyLength: apiKey.length
+        });
+        throw new Error('Invalid OpenAI API key format');
     }
 
     const userHistory = getUserInteractions(userId);
     const userPrefs = getUserPreferences(userId);
-
     const prompt = buildRecommendationPrompt(userPrefs, preferences, currentProduct, context, userHistory);
 
+    logger.debug('📝 OpenAI request details', {
+        promptLength: prompt.length,
+        userHistoryCount: userHistory.length,
+        userPrefsKeys: Object.keys(userPrefs)
+    });
+
     try {
+        const requestBody = {
+            model: 'gpt-3.5-turbo',
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are an expert fashion consultant specializing in Indian ethnic wear. Provide personalized product recommendations based on user preferences, occasions, and style preferences.'
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: 1000,
+            temperature: 0.7
+        };
+
+        logger.debug('🚀 Making OpenAI API request', {
+            url: 'https://api.openai.com/v1/chat/completions',
+            model: requestBody.model,
+            messagesCount: requestBody.messages.length,
+            maxTokens: requestBody.max_tokens
+        });
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                'Authorization': `Bearer ${apiKey}`
             },
-            body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are an expert fashion consultant specializing in Indian ethnic wear. Provide personalized product recommendations based on user preferences, occasions, and style preferences.'
-                    },
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                max_tokens: 1000,
-                temperature: 0.7
-            })
+            body: JSON.stringify(requestBody)
         });
+
+        logger.info('📡 OpenAI API response received', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: {
+                contentType: response.headers.get('content-type'),
+                contentLength: response.headers.get('content-length')
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            logger.error('❌ OpenAI API HTTP error', {
+                status: response.status,
+                statusText: response.statusText,
+                errorBody: errorText
+            });
+            throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+        }
 
         const data = await response.json();
         
-        if (data.choices && data.choices[0]) {
+        logger.debug('📦 OpenAI API response data', {
+            hasChoices: !!data.choices,
+            choicesLength: data.choices?.length,
+            hasUsage: !!data.usage,
+            usage: data.usage,
+            firstChoiceKeys: data.choices?.[0] ? Object.keys(data.choices[0]) : null,
+            hasMessage: !!data.choices?.[0]?.message,
+            messageRole: data.choices?.[0]?.message?.role,
+            contentLength: data.choices?.[0]?.message?.content?.length
+        });
+
+        if (data.error) {
+            logger.error('❌ OpenAI API returned error', {
+                error: data.error
+            });
+            throw new Error(`OpenAI API error: ${data.error.message || JSON.stringify(data.error)}`);
+        }
+        
+        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+            logger.info('✅ OpenAI response successful', {
+                responseLength: data.choices[0].message.content.length,
+                tokensUsed: data.usage?.total_tokens
+            });
             return parseAIResponse(data.choices[0].message.content);
         }
         
-        throw new Error('Invalid OpenAI response');
+        logger.error('❌ Invalid OpenAI response structure', {
+            dataKeys: Object.keys(data),
+            data: JSON.stringify(data, null, 2)
+        });
+        throw new Error('Invalid OpenAI response structure');
     } catch (error) {
-        logger.error('OpenAI API error', { error: error.message });
+        logger.error('❌ OpenAI API call failed', { 
+            error: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         throw error;
     }
 }
