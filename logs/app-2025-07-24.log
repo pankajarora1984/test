@@ -239,3 +239,22 @@
 [2025-07-24T08:46:07.814Z] [INFO] 🎉 HTTPS Server Started Successfully {"port":"3443","environment":"development","logLevel":"DEBUG"}
 [2025-07-24T08:46:15.644Z] [DEBUG] 🏥 Health check requested {"status":"OK","timestamp":"2025-07-24T08:46:15.644Z","uptime":7.950408625,"memory":{"rss":74268672,"heapTotal":20144128,"heapUsed":10554336,"external":3437710,"arrayBuffers":67952},"version":"1.0.0","environment":"development"}
 [2025-07-24T08:46:15.646Z] [INFO] HTTP GET /health {"method":"GET","url":"/health","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"4ms","timestamp":"2025-07-24T08:46:15.646Z"}
+[2025-07-24T09:22:36.444Z] [INFO] 🛑 SIGTERM received, shutting down gracefully
+[2025-07-24T09:22:36.445Z] [INFO] ✅ Both servers closed successfully
+[2025-07-24T09:22:44.664Z] [INFO] 🚀 Starting Chandan Sarees E-commerce Server {"httpPort":"3000","httpsPort":"3443","nodeEnv":"development","logLevel":"DEBUG"}
+[2025-07-24T09:22:44.665Z] [DEBUG] ✅ Helmet security middleware enabled with relaxed CSP
+[2025-07-24T09:22:44.665Z] [DEBUG] ✅ CORS middleware enabled
+[2025-07-24T09:22:44.665Z] [DEBUG] ✅ Enhanced request logging enabled
+[2025-07-24T09:22:44.666Z] [DEBUG] ✅ Body parser middleware enabled
+[2025-07-24T09:22:44.666Z] [DEBUG] ✅ Static file serving enabled for /public with explicit MIME types
+[2025-07-24T09:22:44.666Z] [DEBUG] 📁 Loading route modules...
+[2025-07-24T09:22:44.694Z] [DEBUG] ✅ All route modules loaded successfully
+[2025-07-24T09:22:44.694Z] [INFO] 🛣️  API routes registered successfully {"routes":["/api/products","/api/categories","/api/contact","/api/cart","/api/orders","/api/recommendations"]}
+[2025-07-24T09:22:44.695Z] [INFO] ✅ SSL certificates loaded successfully
+[2025-07-24T09:22:44.719Z] [INFO] 🎉 HTTP Server Started Successfully {"port":"3000","environment":"development","logLevel":"DEBUG"}
+[2025-07-24T09:22:44.719Z] [INFO] 🎉 HTTPS Server Started Successfully {"port":"3443","environment":"development","logLevel":"DEBUG"}
+[2025-07-24T09:22:54.321Z] [INFO] HTTP GET /test-ai.html {"method":"GET","url":"/test-ai.html","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"5ms","timestamp":"2025-07-24T09:22:54.321Z"}
+[2025-07-24T09:23:00.359Z] [INFO] 🤖 AI recommendation request received {"userId":"test","context":"general","preferences":{"occasion":"wedding"}}
+[2025-07-24T09:23:00.359Z] [INFO] 🔧 Using local recommendation engine
+[2025-07-24T09:23:00.359Z] [INFO] 🎯 AI recommendations generated {"userId":"test","provider":"local","recommendationCount":2}
+[2025-07-24T09:23:00.360Z] [INFO] HTTP POST /suggest {"method":"POST","url":"/suggest","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"6ms","timestamp":"2025-07-24T09:23:00.360Z"}
