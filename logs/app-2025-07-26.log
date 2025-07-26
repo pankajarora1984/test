@@ -18,3 +18,53 @@
 [2025-07-26T08:40:34.325Z] [INFO] 🔧 Using local recommendation engine
 [2025-07-26T08:40:34.325Z] [INFO] 🎯 AI recommendations generated {"userId":"test_final","provider":"local","recommendationCount":2}
 [2025-07-26T08:40:34.326Z] [INFO] HTTP POST /suggest {"method":"POST","url":"/suggest","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"6ms","timestamp":"2025-07-26T08:40:34.326Z"}
+[2025-07-26T11:09:04.459Z] [INFO] 🚀 Starting Chandan Sarees E-commerce Server {"httpPort":"3000","httpsPort":"3443","nodeEnv":"production","logLevel":"DEBUG"}
+[2025-07-26T11:09:04.460Z] [DEBUG] ✅ Helmet security middleware enabled with relaxed CSP
+[2025-07-26T11:09:04.460Z] [DEBUG] ✅ CORS middleware enabled
+[2025-07-26T11:09:04.460Z] [DEBUG] ✅ Enhanced request logging enabled
+[2025-07-26T11:09:04.460Z] [DEBUG] ✅ Body parser middleware enabled
+[2025-07-26T11:09:04.461Z] [DEBUG] ✅ Static file serving enabled for /public with explicit MIME types
+[2025-07-26T11:09:04.461Z] [DEBUG] 📁 Loading route modules...
+[2025-07-26T11:09:04.490Z] [DEBUG] ✅ All route modules loaded successfully
+[2025-07-26T11:09:04.490Z] [INFO] 🛣️  API routes registered successfully {"routes":["/api/products","/api/categories","/api/contact","/api/cart","/api/orders","/api/recommendations"]}
+[2025-07-26T11:09:04.490Z] [INFO] ✅ SSL certificates loaded successfully
+[2025-07-26T11:09:04.515Z] [INFO] 🎉 HTTP Server Started Successfully {"port":"3000","environment":"production","logLevel":"DEBUG"}
+[2025-07-26T11:09:04.515Z] [INFO] 🎉 HTTPS Server Started Successfully {"port":"3443","environment":"production","logLevel":"DEBUG"}
+[2025-07-26T11:09:14.267Z] [INFO] 🤖 AI recommendation request received {"userId":"debug_test","context":"general","preferences":{"occasion":"wedding","priceRange":"premium"}}
+[2025-07-26T11:09:14.267Z] [INFO] 🤖 Starting OpenAI recommendations request {"userId":"debug_test","preferences":{"occasion":"wedding","priceRange":"premium"},"context":"general","hasApiKey":true,"apiKeyLength":164,"apiKeyPrefix":"sk-proj-qK..."}
+[2025-07-26T11:09:14.267Z] [DEBUG] 📝 OpenAI request details {"promptLength":1235,"userHistoryCount":0,"userPrefsKeys":["occasion","priceRange","lastUpdated"]}
+[2025-07-26T11:09:14.267Z] [DEBUG] 🚀 Making OpenAI API request {"url":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo","messagesCount":2,"maxTokens":1000}
+[2025-07-26T11:09:15.200Z] [INFO] 📡 OpenAI API response received {"status":429,"statusText":"Too Many Requests","ok":false,"headers":{"contentType":"application/json; charset=utf-8","contentLength":"337"}}
+[2025-07-26T11:09:15.200Z] [ERROR] ❌ OpenAI API HTTP error {"status":429,"statusText":"Too Many Requests","errorBody":"{\n    \"error\": {\n        \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\",\n        \"type\": \"insufficient_quota\",\n        \"param\": null,\n        \"code\": \"insufficient_quota\"\n    }\n}\n"}
+[2025-07-26T11:09:15.201Z] [ERROR] ❌ OpenAI API call failed {"error":"OpenAI API error: 429 Too Many Requests - {\n    \"error\": {\n        \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\",\n        \"type\": \"insufficient_quota\",\n        \"param\": null,\n        \"code\": \"insufficient_quota\"\n    }\n}\n","stack":"Error: OpenAI API error: 429 Too Many Requests - {\n    \"error\": {\n        \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\",\n        \"type\": \"insufficient_quota\",\n        \"param\": null,\n        \"code\": \"insufficient_quota\"\n    }\n}\n\n    at getOpenAIRecommendations (/workspace/routes/recommendations.js:225:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async /workspace/routes/recommendations.js:79:35","name":"Error"}
+[2025-07-26T11:09:15.201Z] [ERROR] ❌ AI recommendation error {"error":"OpenAI API error: 429 Too Many Requests - {\n    \"error\": {\n        \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\",\n        \"type\": \"insufficient_quota\",\n        \"param\": null,\n        \"code\": \"insufficient_quota\"\n    }\n}\n","stack":"Error: OpenAI API error: 429 Too Many Requests - {\n    \"error\": {\n        \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\",\n        \"type\": \"insufficient_quota\",\n        \"param\": null,\n        \"code\": \"insufficient_quota\"\n    }\n}\n\n    at getOpenAIRecommendations (/workspace/routes/recommendations.js:225:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async /workspace/routes/recommendations.js:79:35"}
+[2025-07-26T11:09:15.201Z] [INFO] 🔧 Using local recommendation engine
+[2025-07-26T11:09:15.203Z] [INFO] HTTP POST /suggest {"method":"POST","url":"/suggest","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"941ms","timestamp":"2025-07-26T11:09:15.203Z"}
+[2025-07-26T11:20:03.897Z] [INFO] 🛑 SIGTERM received, shutting down gracefully
+[2025-07-26T11:20:03.898Z] [INFO] ✅ Both servers closed successfully
+[2025-07-26T11:20:11.915Z] [INFO] 🚀 Starting Chandan Sarees E-commerce Server {"httpPort":"3000","httpsPort":"3443","nodeEnv":"production","logLevel":"DEBUG"}
+[2025-07-26T11:20:11.916Z] [DEBUG] ✅ Helmet security middleware enabled with relaxed CSP
+[2025-07-26T11:20:11.916Z] [DEBUG] ✅ CORS middleware enabled
+[2025-07-26T11:20:11.917Z] [DEBUG] ✅ Enhanced request logging enabled
+[2025-07-26T11:20:11.917Z] [DEBUG] ✅ Body parser middleware enabled
+[2025-07-26T11:20:11.917Z] [DEBUG] ✅ Static file serving enabled for /public with explicit MIME types
+[2025-07-26T11:20:11.917Z] [DEBUG] 📁 Loading route modules...
+[2025-07-26T11:20:11.945Z] [DEBUG] ✅ All route modules loaded successfully
+[2025-07-26T11:20:11.946Z] [INFO] 🛣️  API routes registered successfully {"routes":["/api/products","/api/categories","/api/contact","/api/cart","/api/orders","/api/recommendations"]}
+[2025-07-26T11:20:11.946Z] [INFO] ✅ SSL certificates loaded successfully
+[2025-07-26T11:20:11.970Z] [INFO] 🎉 HTTP Server Started Successfully {"port":"3000","environment":"production","logLevel":"DEBUG"}
+[2025-07-26T11:20:11.970Z] [INFO] 🎉 HTTPS Server Started Successfully {"port":"3443","environment":"production","logLevel":"DEBUG"}
+[2025-07-26T11:20:23.408Z] [INFO] 🤖 AI recommendation request received {"userId":"puter_test","context":"general","preferences":{"occasion":"wedding","priceRange":"premium"}}
+[2025-07-26T11:20:23.408Z] [INFO] 🤖 Starting Puter.js AI recommendations request {"userId":"puter_test","preferences":{"occasion":"wedding","priceRange":"premium"},"context":"general"}
+[2025-07-26T11:20:23.409Z] [DEBUG] 📝 Puter.js request details {"promptLength":1235,"userHistoryCount":0,"userPrefsKeys":["occasion","priceRange","lastUpdated"]}
+[2025-07-26T11:20:23.409Z] [DEBUG] 🚀 Making Puter.js AI request {"url":"https://api.puter.com/v1/ai/chat/completions","model":"gpt-3.5-turbo","messagesCount":2,"maxTokens":1000}
+[2025-07-26T11:20:23.444Z] [INFO] 📡 Puter.js AI response received {"status":403,"statusText":"Forbidden","ok":false,"headers":{"contentType":"text/html; charset=utf-8","contentLength":"9"}}
+[2025-07-26T11:20:23.445Z] [ERROR] ❌ Puter.js AI HTTP error {"status":403,"statusText":"Forbidden","errorBody":"Forbidden"}
+[2025-07-26T11:20:23.445Z] [INFO] 🔄 Trying Puter.js alternative endpoint...
+[2025-07-26T11:20:23.445Z] [INFO] 🔄 Using Puter.js alternative approach
+[2025-07-26T11:20:23.470Z] [ERROR] ❌ Puter.js alternative failed {"error":"Puter.js alternative endpoint failed"}
+[2025-07-26T11:20:23.470Z] [INFO] 🧠 Using AI-enhanced local recommendations as final fallback
+[2025-07-26T11:20:23.471Z] [INFO] 🧠 Using AI-enhanced local recommendation engine
+[2025-07-26T11:20:23.471Z] [INFO] ✅ AI-enhanced local recommendations generated {"count":2,"avgScore":0.875}
+[2025-07-26T11:20:23.471Z] [INFO] 🎯 AI recommendations generated {"userId":"puter_test","provider":"puter","recommendationCount":2}
+[2025-07-26T11:20:23.473Z] [INFO] HTTP POST /suggest {"method":"POST","url":"/suggest","userAgent":"curl/8.12.1","ip":"127.0.0.1","status":200,"duration":"69ms","timestamp":"2025-07-26T11:20:23.473Z"}

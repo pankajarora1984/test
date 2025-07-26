@@ -7,7 +7,8 @@ Your Chandan Sarees website now includes an advanced AI-powered recommendation s
 ## 🎯 Features
 
 ### ✅ **Multiple AI Providers**
-- **OpenAI GPT-3.5/4** - Premium AI recommendations
+- **Puter.js AI** - FREE AI recommendations via Puter.js platform
+- **OpenAI GPT-3.5/4** - Premium AI recommendations (paid)
 - **Google Gemini** - Google's latest AI model
 - **Anthropic Claude** - Advanced reasoning capabilities
 - **Local Algorithm** - Fallback rule-based system (no API required)
@@ -28,28 +29,36 @@ Your Chandan Sarees website now includes an advanced AI-powered recommendation s
 
 ### 1. **Choose Your AI Provider**
 
-#### Option A: Use Local Algorithm (No Setup Required)
+#### Option A: Use Puter.js AI (FREE - Recommended!)
+```bash
+# Free AI recommendations via Puter.js
+AI_PROVIDER=puter
+PUTER_API_KEY=free
+```
+✅ **Free AI recommendations with no quotas!**
+
+#### Option B: Use Local Algorithm (No Setup Required)
 ```bash
 # Already configured by default
 AI_PROVIDER=local
 ```
 ✅ **Ready to use immediately!**
 
-#### Option B: OpenAI Integration
+#### Option C: OpenAI Integration (Paid)
 ```bash
 # Get API key from: https://platform.openai.com/api-keys
 AI_PROVIDER=openai
 OPENAI_API_KEY=sk-your-openai-api-key-here
 ```
 
-#### Option C: Google Gemini Integration
+#### Option D: Google Gemini Integration
 ```bash
 # Get API key from: https://aistudio.google.com/app/apikey
 AI_PROVIDER=gemini
 GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
-#### Option D: Anthropic Claude Integration
+#### Option E: Anthropic Claude Integration
 ```bash
 # Get API key from: https://console.anthropic.com/
 AI_PROVIDER=anthropic
