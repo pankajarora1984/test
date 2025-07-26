@@ -1,26 +1,49 @@
-// Simple logger for frontend (fallback if not available)
-if (typeof logger === 'undefined') {
-    window.logger = {
-        api: function(message, method, status, duration, data, error) {
-            console.log(`[API] ${message}`, {
-                method: method || 'GET',
-                status: status || 200,
-                duration: duration || 0,
-                data: data || {},
-                error: error || null
-            });
-        },
-        info: function(message, data) {
-            console.log(`[INFO] ${message}`, data || {});
-        },
-        error: function(message, data) {
-            console.error(`[ERROR] ${message}`, data || {});
-        },
-        warn: function(message, data) {
-            console.warn(`[WARN] ${message}`, data || {});
-        }
-    };
-}
+// Define logger immediately - must be first thing in the file
+(function() {
+    'use strict';
+    
+    // Create global logger if it doesn't exist
+    if (typeof window.logger === 'undefined') {
+        window.logger = {
+            api: function(message, method, status, duration, data, error) {
+                try {
+                    console.log(`[API] ${message}`, {
+                        method: method || 'GET',
+                        status: status || 200,
+                        duration: duration || 0,
+                        data: data || {},
+                        error: error || null
+                    });
+                } catch (e) {
+                    console.log(`[API] ${message}`);
+                }
+            },
+            info: function(message, data) {
+                try {
+                    console.log(`[INFO] ${message}`, data || {});
+                } catch (e) {
+                    console.log(`[INFO] ${message}`);
+                }
+            },
+            error: function(message, data) {
+                try {
+                    console.error(`[ERROR] ${message}`, data || {});
+                } catch (e) {
+                    console.error(`[ERROR] ${message}`);
+                }
+            },
+            warn: function(message, data) {
+                try {
+                    console.warn(`[WARN] ${message}`, data || {});
+                } catch (e) {
+                    console.warn(`[WARN] ${message}`);
+                }
+            }
+        };
+        
+        console.log('✅ Logger initialized for AI recommendations');
+    }
+})();
 
 // AI Recommendation System Frontend
 class AIRecommendations {
@@ -29,6 +52,29 @@ class AIRecommendations {
         this.recommendations = [];
         this.userPreferences = {};
         this.isLoading = false;
+    }
+
+    // Safe logging method
+    safeLog(type, message, method, status, duration, data, error) {
+        try {
+            if (window.logger && window.logger[type]) {
+                if (type === 'api') {
+                    window.logger.api(message, method, status, duration, data, error);
+                } else {
+                    window.logger[type](message, data);
+                }
+            } else {
+                // Fallback to console
+                if (type === 'api') {
+                    console.log(`[API] ${message}`, { method, status, duration, data, error });
+                } else {
+                    console.log(`[${type.toUpperCase()}] ${message}`, data || '');
+                }
+            }
+        } catch (e) {
+            // Ultimate fallback
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
     }
 
     // Get AI recommendations
@@ -52,24 +98,18 @@ class AIRecommendations {
             
             if (data.success) {
                 this.recommendations = data.recommendations || [];
-                try {
-                    logger.api('AI recommendations received', 'GET', 200, 0, { 
-                        count: this.recommendations.length, 
-                        provider: data.provider 
-                    });
-                } catch (logError) {
-                    console.log('[AI] Recommendations received:', this.recommendations.length, 'items');
-                }
+                // Safe logging
+                this.safeLog('api', 'AI recommendations received', 'GET', 200, 0, { 
+                    count: this.recommendations.length, 
+                    provider: data.provider 
+                });
                 return data;
             } else {
                 throw new Error(data.message || 'Failed to get recommendations');
             }
         } catch (error) {
-            try {
-                logger.api('AI recommendations failed', 'GET', 500, 0, {}, error.message);
-            } catch (logError) {
-                console.error('[AI] Recommendations failed:', error.message);
-            }
+            // Safe error logging
+            this.safeLog('api', 'AI recommendations failed', 'GET', 500, 0, {}, error.message);
             console.error('AI Recommendations Error:', error);
             return { success: false, recommendations: [], error: error.message };
         } finally {
@@ -845,23 +885,19 @@ if (typeof products === 'undefined') {
     window.products = [];
 }
 
-// Safe logger check
-function safeLog(message, data) {
-    try {
-        if (typeof logger !== 'undefined' && logger.info) {
-            logger.info(message, data);
-        } else {
-            console.log(`[AI] ${message}`, data || '');
-        }
-    } catch (e) {
-        console.log(`[AI] ${message}`, data || '');
-    }
-}
-
 // Initialize AI recommendations
 const aiRecommendations = new AIRecommendations();
 
-safeLog('AI Recommendations System Initializing...');
+// Safe initialization logging
+try {
+    if (window.logger) {
+        window.logger.info('AI Recommendations System Initializing...');
+    } else {
+        console.log('[AI] AI Recommendations System Initializing...');
+    }
+} catch (e) {
+    console.log('[AI] AI Recommendations System Initializing...');
+}
 
 // Add event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {

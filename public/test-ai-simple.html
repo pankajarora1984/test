@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Logger Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🤖 AI Logger Fix Test</h1>
+    
+    <div id="status">Testing...</div>
+    
+    <button onclick="testAI()">Test AI Recommendations</button>
+    <button onclick="checkLogger()">Check Logger</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Mock required globals
+        window.currentUser = { id: 'test_user' };
+        window.products = [{
+            id: '1', name: 'Test Saree', price: 5000, 
+            category: 'silk-sarees', material: 'Silk', rating: 4.5
+        }];
+        
+        function updateStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'test-result ' + (isError ? 'error' : 'success');
+        }
+        
+        function addResult(message, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            div.className = 'test-result ' + (isError ? 'error' : 'success');
+            results.appendChild(div);
+        }
+        
+        function checkLogger() {
+            try {
+                if (typeof logger !== 'undefined') {
+                    logger.info('Logger test successful');
+                    addResult('✅ Logger is working');
+                } else {
+                    addResult('❌ Logger not found', true);
+                }
+            } catch (e) {
+                addResult('❌ Logger error: ' + e.message, true);
+            }
+        }
+        
+        function testAI() {
+            try {
+                if (typeof aiRecommendations !== 'undefined') {
+                    addResult('✅ AI system found');
+                    aiRecommendations.showRecommendationModal();
+                    addResult('✅ AI modal opened successfully');
+                } else {
+                    addResult('❌ AI system not found', true);
+                }
+            } catch (e) {
+                addResult('❌ AI error: ' + e.message, true);
+            }
+        }
+        
+        // Test on load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                checkLogger();
+                if (typeof aiRecommendations !== 'undefined') {
+                    updateStatus('✅ All systems loaded successfully');
+                } else {
+                    updateStatus('❌ AI system not loaded', true);
+                }
+            }, 1000);
+        });
+        
+        // Catch any errors
+        window.addEventListener('error', function(e) {
+            addResult('❌ JavaScript Error: ' + e.message, true);
+        });
+    </script>
+    
+    <!-- Load scripts in correct order -->
+    <script src="logger.js"></script>
+    <script src="ai-recommendations.js"></script>
+</body>
+</html>
